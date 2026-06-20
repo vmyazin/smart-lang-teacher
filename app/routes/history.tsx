@@ -1,12 +1,10 @@
-import { existsSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
 import { useState } from "react";
 import { Form, Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/history";
 import Nav from "../components/Nav";
 import { getContext } from "../lib/app-context.server";
+import { unlinkAudioFiles } from "../lib/audio-files.server";
 import { getUserId } from "../lib/session.server";
-import { fileBasename } from "../lib/paths";
 import type { TurnSummary } from "../domain/types";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -40,19 +38,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (Number.isInteger(turnId) && turnId > 0) {
       const { repo } = getContext();
       const res = repo.deleteTurn(turnId, userId);
-      if (res) {
-        const audioDir = process.env.AUDIO_DIR ?? "data/audio";
-        for (const p of res.audioPaths) {
-          const fp = join(audioDir, fileBasename(p));
-          if (existsSync(fp)) {
-            try {
-              unlinkSync(fp);
-            } catch {
-              /* best-effort: a missing/locked file must not fail the delete */
-            }
-          }
-        }
-      }
+      if (res) unlinkAudioFiles(res.audioPaths);
     }
   }
   return back();

@@ -3,6 +3,7 @@ import { Form, redirect, useLoaderData, useFetcher } from "react-router";
 import Nav from "../components/Nav";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
+import { unlinkAudioFiles } from "../lib/audio-files.server";
 import { createLogger, type StageLogger } from "../lib/log.server";
 import { clearProgress, reportProgress } from "../lib/progress.server";
 import { getUserId } from "../lib/session.server";
@@ -126,9 +127,13 @@ export async function action({ request }: Route.ActionArgs) {
     return { result };
   } catch (err) {
     log("turn: ERROR", { message: String(err) });
+    // Remove the empty turn this failed attempt created so it doesn't litter
+    // history (and repeated retries don't accumulate "0 tips" ghost rows).
+    const deleted = ctx.repo.deleteTurn(turnId, userId);
+    if (deleted) unlinkAudioFiles(deleted.audioPaths);
     return {
       error:
-        "Something went wrong while analyzing your answer. Please try recording again.",
+        "Analyzing your answer failed. You can listen to your recording below and try again.",
     };
   } finally {
     if (token) clearProgress(token);
@@ -189,6 +194,8 @@ export default function Session() {
   const chunks = useRef<Blob[]>([]);
   const recorder = useRef<MediaRecorder | null>(null);
   const tokenRef = useRef<string>("");
+  const lastBlobRef = useRef<Blob | null>(null);
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
 
   const busy = fetcher.state !== "idle";
   const result =
@@ -245,6 +252,18 @@ export default function Session() {
     setRecording(true);
   }
 
+  function submitRecording(blob: Blob) {
+    const token = crypto.randomUUID();
+    tokenRef.current = token;
+    setProgress(null);
+    setElapsed(0);
+    const fd = new FormData();
+    fd.append("prompt", prompt);
+    fd.append("audio", blob, "audio.webm");
+    fd.append("progressToken", token);
+    fetcher.submit(fd, { method: "post", encType: "multipart/form-data" });
+  }
+
   async function stop() {
     const mr = recorder.current!;
     await new Promise<void>((res) => {
@@ -253,16 +272,18 @@ export default function Session() {
     });
     mr.stream.getTracks().forEach((t) => t.stop());
     setRecording(false);
-    const token = crypto.randomUUID();
-    tokenRef.current = token;
-    setProgress(null);
-    setElapsed(0);
     const blob = new Blob(chunks.current, { type: "audio/webm" });
-    const fd = new FormData();
-    fd.append("prompt", prompt);
-    fd.append("audio", blob, "audio.webm");
-    fd.append("progressToken", token);
-    fetcher.submit(fd, { method: "post", encType: "multipart/form-data" });
+    lastBlobRef.current = blob;
+    setRecordingUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    });
+    submitRecording(blob);
+  }
+
+  // Re-run analysis on the same recording (after a failure) — no re-recording.
+  function retry() {
+    if (lastBlobRef.current) submitRecording(lastBlobRef.current);
   }
 
   return (
@@ -332,7 +353,25 @@ export default function Session() {
           </div>
         )}
 
-        {error && <p className="pk-error" style={{ marginTop: 16 }}>{error}</p>}
+        {error && !busy && (
+          <div className="pk-retry">
+            <p className="pk-error">{error}</p>
+            {recordingUrl && (
+              <div className="pk-retry-audio">
+                <span className="pk-retry-label">Your recording</span>
+                <audio className="pk-audio" controls src={recordingUrl} />
+              </div>
+            )}
+            <button
+              type="button"
+              className="pk-btn pk-btn--teal pk-retry-btn"
+              onClick={retry}
+              disabled={busy || !lastBlobRef.current}
+            >
+              Try analysis again
+            </button>
+          </div>
+        )}
       </div>
 
       {transcript && (
