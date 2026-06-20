@@ -5,13 +5,9 @@ import { getContext } from "../lib/app-context.server";
 import { createLogger, type StageLogger } from "../lib/log.server";
 import { clearProgress, reportProgress } from "../lib/progress.server";
 import { getUserId } from "../lib/session.server";
+import { fileBasename } from "../lib/paths";
 import { generatePrompt } from "../modules/prompt-generator";
 import { runTurn } from "../modules/run-turn";
-
-/** Extract just the filename from a server-side path (works in browser without node:path). */
-function fileBasename(p: string): string {
-  return p.replace(/\\/g, "/").split("/").pop() ?? p;
-}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const userId = await getUserId(request);
