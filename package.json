@@ -1,0 +1,44 @@
+{
+  "name": "smart-lang-teacher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "cross-env NODE_ENV=development node --conditions development server.js",
+    "start": "node server.js",
+    "typecheck": "react-router typegen && tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@react-router/express": "8.0.0",
+    "@react-router/node": "8.0.0",
+    "better-sqlite3": "^12.11.1",
+    "compression": "^1.8.1",
+    "express": "^5.2.1",
+    "isbot": "^5.1.36",
+    "morgan": "^1.10.1",
+    "openai": "^6.44.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "8.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@react-router/dev": "8.0.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/express-serve-static-core": "^5.1.1",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^22",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "cross-env": "^10.0.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.9"
+  }
+}
