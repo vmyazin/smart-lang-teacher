@@ -132,6 +132,40 @@ export function createRepository(db: Db) {
       };
     },
 
+    deleteTurn(turnId: number, userId: number): { audioPaths: string[] } | null {
+      const owned = db
+        .prepare(
+          `SELECT t.id FROM turns t JOIN sessions s ON t.session_id = s.id
+           WHERE t.id = ? AND s.user_id = ?`,
+        )
+        .get(turnId, userId) as { id: number } | undefined;
+      if (!owned) return null;
+
+      const turnRow = db.prepare("SELECT audio_path FROM turns WHERE id = ?").get(turnId) as
+        | { audio_path: string | null }
+        | undefined;
+      const lessonRow = db.prepare("SELECT voiced_phrases FROM lessons WHERE turn_id = ?").get(turnId) as
+        | { voiced_phrases: string }
+        | undefined;
+
+      const audioPaths: string[] = [];
+      if (turnRow?.audio_path) audioPaths.push(turnRow.audio_path);
+      if (lessonRow?.voiced_phrases) {
+        for (const vp of JSON.parse(lessonRow.voiced_phrases) as VoicedPhrase[]) {
+          if (vp.audio_path) audioPaths.push(vp.audio_path);
+        }
+      }
+
+      const tx = db.transaction(() => {
+        db.prepare("DELETE FROM lessons WHERE turn_id = ?").run(turnId);
+        db.prepare("DELETE FROM diagnoses WHERE turn_id = ?").run(turnId);
+        db.prepare("DELETE FROM turns WHERE id = ?").run(turnId);
+      });
+      tx();
+
+      return { audioPaths };
+    },
+
     listTurns(
       userId: number,
       opts: { search?: string; skill?: string } = {},

@@ -187,3 +187,30 @@ describe("current_prompt + status", () => {
     expect(repo.getTurnDetail(skipped, u.id)!.status).toBe("skipped");
   });
 });
+
+describe("deleteTurn", () => {
+  it("deletes the turn + its diagnosis/lesson and returns audio paths", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const { userId, turnId } = seedTurn(repo, "alice"); // seeds audio_path + a voiced phrase
+    const res = repo.deleteTurn(turnId, userId);
+    expect(res).not.toBeNull();
+    expect(res!.audioPaths).toContain("data/audio/rec.webm");
+    expect(res!.audioPaths).toContain("data/audio/phrase1.webm");
+    expect(repo.getTurnDetail(turnId, userId)).toBeNull();
+    expect(repo.listTurns(userId)).toHaveLength(0);
+  });
+
+  it("returns null and deletes nothing for another user's turn", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const a = seedTurn(repo, "alice");
+    const b = seedTurn(repo, "bob");
+    expect(repo.deleteTurn(a.turnId, b.userId)).toBeNull();
+    expect(repo.getTurnDetail(a.turnId, a.userId)).not.toBeNull(); // still there
+  });
+
+  it("returns null for a missing turn", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const { userId } = seedTurn(repo, "alice");
+    expect(repo.deleteTurn(99999, userId)).toBeNull();
+  });
+});
