@@ -102,6 +102,7 @@ export default function Profile() {
                     <span className="pk-skill-cat">{s.category}</span>
                     <span className="pk-skill-label">{s.label}</span>
                     <span className="pk-skill-meta">×{s.occurrences}</span>
+                    <span className="pk-skill-seen">seen {new Date(s.last_seen).toLocaleDateString()}</span>
                     {due && <span className="pk-skill-due">due</span>}
                   </div>
                 );

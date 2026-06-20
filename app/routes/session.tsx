@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect, useLoaderData, useFetcher } from "react-router";
+import Nav from "../components/Nav";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
 import { createLogger, type StageLogger } from "../lib/log.server";
@@ -230,16 +231,7 @@ export default function Session() {
 
   return (
     <main className="pk-wrap">
-      <div className="pk-bar">
-        <span className="pk-logo">
-          <span className="blob" />
-          Parla
-        </span>
-        <span className="pk-pill">
-          {(user.target_lang ?? "es").toUpperCase()}
-          {user.level ? ` · ${user.level}` : ""}
-        </span>
-      </div>
+      <Nav right={<span className="pk-pill">{(user.target_lang ?? "es").toUpperCase()}{user.level ? ` · ${user.level}` : ""}</span>} />
 
       <div className="pk-card pk-card--tilt">
         <span className="pk-pin">Today's prompt</span>
