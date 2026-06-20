@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+/node_modules/
+/.planning/
+*.tsbuildinfo
+
+# React Router
+/.react-router/
+/build/
+data/
