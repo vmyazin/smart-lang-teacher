@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import Database from "better-sqlite3";
 
 export type Db = Database.Database;
@@ -52,6 +54,11 @@ CREATE TABLE IF NOT EXISTS lessons (
 `;
 
 export function openDb(path: string): Db {
+  // better-sqlite3 won't create missing parent directories; do it ourselves
+  // (skip for the in-memory database used in tests).
+  if (path !== ":memory:") {
+    mkdirSync(dirname(path), { recursive: true });
+  }
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
