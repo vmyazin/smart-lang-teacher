@@ -174,6 +174,26 @@ export function createRepository(db: Db) {
       });
     },
 
+    listSkillFacets(userId: number): string[] {
+      const rows = db
+        .prepare(
+          `SELECT d.issues AS issues
+           FROM turns t
+           JOIN sessions s ON t.session_id = s.id
+           JOIN diagnoses d ON d.turn_id = t.id
+           WHERE s.user_id = ?`,
+        )
+        .all(userId) as any[];
+      const facets = new Set<string>();
+      for (const r of rows) {
+        for (const i of JSON.parse(r.issues) as Issue[]) {
+          facets.add(i.dimension);
+          for (const tag of i.tags) facets.add(tag);
+        }
+      }
+      return [...facets].sort();
+    },
+
     replaceSkillItems(userId: number, items: SkillItem[]): void {
       const tx = db.transaction(() => {
         db.prepare("DELETE FROM skill_items WHERE user_id = ?").run(userId);

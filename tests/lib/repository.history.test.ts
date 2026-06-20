@@ -132,3 +132,33 @@ describe("listTurns", () => {
     expect(out[0].id).toBe(a.turnId);
   });
 });
+
+describe("listSkillFacets", () => {
+  it("returns sorted distinct dimensions + tags for the user only", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "gus", passcode_hash: "h" });
+    const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
+    const t = repo.createTurn({ session_id: sid, prompt_text: "p", created_at: "2026-06-20T00:00:00.000Z" });
+    repo.saveDiagnosis(t, [
+      issue({ dimension: "grammar", tags: ["past-tense", "agreement"] }),
+      issue({ dimension: "idiom", tags: ["slang"] }),
+    ]);
+    // another user's data must not leak in
+    const other = seedTurn(repo, "hank", { issues: [issue({ dimension: "register", tags: ["formality"] })] });
+    void other;
+
+    expect(repo.listSkillFacets(user.id)).toEqual([
+      "agreement",
+      "grammar",
+      "idiom",
+      "past-tense",
+      "slang",
+    ]);
+  });
+
+  it("returns an empty list when the user has no diagnoses", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "ivy", passcode_hash: "h" });
+    expect(repo.listSkillFacets(user.id)).toEqual([]);
+  });
+});
