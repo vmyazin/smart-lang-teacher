@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
+import { createLogger } from "../lib/log.server";
 import { getUserId } from "../lib/session.server";
 import { generatePrompt } from "../modules/prompt-generator";
 import { runTurn } from "../modules/run-turn";
@@ -18,6 +19,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   const user = repo.getUser(userId);
   if (!user || !user.target_lang) return redirect("/onboarding");
   const profile = repo.getSkillItems(userId);
+  const log = createLogger(`prompt user=${userId}`);
+  log("generate prompt: start", { target: user.target_lang, profileItems: profile.length });
   const prompt = await generatePrompt({
     interests: user.interests,
     profile,
@@ -25,6 +28,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     now: new Date(),
     chat,
   });
+  log("generate prompt: done", { chars: prompt.length });
   const tracking = profile
     .filter((s) => s.status !== "mastered")
     .slice(0, 4)
@@ -39,11 +43,16 @@ export async function action({ request }: Route.ActionArgs) {
   const user = ctx.repo.getUser(userId);
   if (!user) return redirect("/");
 
+  const log = createLogger(`turn user=${userId}`);
   const form = await request.formData();
   const promptText = String(form.get("prompt") ?? "");
   const blob = form.get("audio");
-  if (!(blob instanceof File)) return { error: "No audio received." };
+  if (!(blob instanceof File)) {
+    log("rejected: no audio");
+    return { error: "No audio received — please try recording again." };
+  }
   const audio = Buffer.from(await blob.arrayBuffer());
+  log("turn: received", { audioBytes: audio.length, promptChars: promptText.length });
 
   const now = new Date();
   const sessionId = ctx.repo.createSession(userId, now.toISOString());
@@ -52,21 +61,35 @@ export async function action({ request }: Route.ActionArgs) {
     prompt_text: promptText,
     created_at: now.toISOString(),
   });
+  log("turn: persisted", { sessionId, turnId });
 
-  const result = await runTurn({
-    repo: ctx.repo,
-    user,
-    sessionId,
-    turnId,
-    promptText,
-    audio,
-    chat: ctx.chat,
-    stt: ctx.stt,
-    tts: ctx.tts,
-    now,
-    saveAudio: ctx.saveAudio,
-  });
-  return { result };
+  try {
+    const result = await runTurn({
+      repo: ctx.repo,
+      user,
+      sessionId,
+      turnId,
+      promptText,
+      audio,
+      chat: ctx.chat,
+      stt: ctx.stt,
+      tts: ctx.tts,
+      log,
+      now,
+      saveAudio: ctx.saveAudio,
+    });
+    log("turn: done", {
+      transcriptChars: result.transcript.trim().length,
+      points: result.lesson.points.length,
+    });
+    return { result };
+  } catch (err) {
+    log("turn: ERROR", { message: String(err) });
+    return {
+      error:
+        "Something went wrong while analyzing your answer. Please try recording again.",
+    };
+  }
 }
 
 const PLAY_ICON = (
@@ -118,6 +141,8 @@ export default function Session() {
   const busy = fetcher.state !== "idle";
   const result =
     fetcher.data && "result" in fetcher.data ? fetcher.data.result : null;
+  const error =
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
   const lesson = result?.lesson ?? null;
   const voicedPhrases = result?.voicedPhrases ?? [];
   const transcript = result?.transcript ?? null;
@@ -181,8 +206,11 @@ export default function Session() {
           {busy ? "Thinking…" : recording ? "Listening… tap to finish" : "Tap & talk!"}
         </div>
         <div className="pk-cap-sub">
-          Answer like you'd tell a friend — about three sentences.
+          {busy
+            ? "Transcribing & analyzing — this takes a few seconds."
+            : "Answer like you'd tell a friend — about three sentences."}
         </div>
+        {error && <p className="pk-error" style={{ marginTop: 16 }}>{error}</p>}
       </div>
 
       {transcript && (

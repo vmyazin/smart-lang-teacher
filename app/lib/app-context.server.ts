@@ -31,8 +31,10 @@ let ctx: AppContext | null = null;
 export function getContext(): AppContext {
   if (ctx) return ctx;
   const db = openDb(process.env.DB_PATH ?? "data/app.db");
-  const anthropic = new Anthropic();
-  const openai = new OpenAI();
+  // Bound every API call so a hung request can't freeze a turn forever.
+  // Worst-case wall-clock per call ≈ timeout × (maxRetries + 1).
+  const anthropic = new Anthropic({ timeout: 90_000, maxRetries: 1 });
+  const openai = new OpenAI({ timeout: 45_000, maxRetries: 1 });
   ctx = {
     repo: createRepository(db),
     chat: createAnthropicChatModel(anthropic),
