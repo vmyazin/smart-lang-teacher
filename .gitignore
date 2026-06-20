@@ -11,3 +11,4 @@
 /.react-router/
 /build/
 data/
+/.playwright-mcp/

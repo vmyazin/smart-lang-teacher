@@ -1,5 +1,7 @@
 # Smart Language Teacher
 
+![Smart Language Teacher — your spontaneous speech, gently taught: record a natural answer, get it diagnosed silently, and learn from bite-size lessons with native pronunciation](docs/assets/hero.png)
+
 A personalized language tutor for intermediate learners. It elicits a spontaneous spoken
 answer, transcribes it, silently diagnoses grammar/vocabulary/naturalness gaps, keeps a
 running per-user skill profile with spaced repetition, and teaches the top issues gently —
