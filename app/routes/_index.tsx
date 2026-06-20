@@ -33,15 +33,44 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Index() {
   const data = useActionData<typeof action>();
   return (
-    <main style={{ maxWidth: 420, margin: "4rem auto", fontFamily: "system-ui" }}>
-      <h1>Language Teacher</h1>
-      <p>Pick your profile (new name = new profile).</p>
-      <Form method="post">
-        <input name="name" placeholder="Your name" autoComplete="off" />
-        <input name="passcode" type="password" placeholder="Passcode" />
-        <button type="submit">Continue</button>
-      </Form>
-      {data?.error && <p style={{ color: "crimson" }}>{data.error}</p>}
+    <main className="pk-wrap pk-wrap--narrow">
+      <div className="pk-bar">
+        <span className="pk-logo">
+          <span className="blob" />
+          Parla
+        </span>
+      </div>
+
+      <div className="pk-card pk-card--tilt">
+        <span className="pk-pin">Welcome</span>
+        <h1 className="pk-h1">Let's get talking 🎙️</h1>
+        <p className="pk-sub">Pick your profile — a new name starts a fresh one.</p>
+
+        <Form method="post" className="pk-form">
+          <div>
+            <label className="pk-label" htmlFor="name">Your name</label>
+            <input
+              id="name"
+              className="pk-input"
+              name="name"
+              placeholder="e.g. Sam"
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <label className="pk-label" htmlFor="passcode">Passcode</label>
+            <input
+              id="passcode"
+              className="pk-input"
+              name="passcode"
+              type="password"
+              placeholder="••••"
+            />
+          </div>
+          {data?.error && <p className="pk-error">{data.error}</p>}
+          <button type="submit" className="pk-btn">Continue →</button>
+        </Form>
+      </div>
     </main>
   );
 }

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parla · Pocket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#fff6ea; --card:#ffffff; --ink:#2a2018; --ink-soft:#7c6b5b;
+    --tang:#ff6a2b; --teal:#0fa789; --berry:#e23d6d; --sun:#ffc23c; --sky:#3aa0ff;
+    --shadow:#1c130c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--cream); color:var(--ink);
+    font-family:"Nunito",system-ui,sans-serif; font-weight:600;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(255,194,60,.25), transparent 22%),
+      radial-gradient(circle at 92% 4%, rgba(15,167,137,.18), transparent 20%),
+      radial-gradient(circle at 84% 96%, rgba(255,106,43,.16), transparent 24%);
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:30px 22px 80px}
+
+  .bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .logo{font-family:"Bricolage Grotesque";font-weight:800;font-size:26px;
+    display:flex;align-items:center;gap:9px}
+  .logo .blob{width:26px;height:26px;border-radius:42% 58% 60% 40%/52% 44% 56% 48%;
+    background:var(--tang);box-shadow:2px 3px 0 var(--shadow);animation:wob 5s ease-in-out infinite}
+  @keyframes wob{50%{border-radius:55% 45% 40% 60%/45% 55% 45% 55%}}
+  .streak{font-family:"Bricolage Grotesque";font-weight:700;font-size:14px;color:var(--ink);
+    background:var(--sun);border:2.5px solid var(--shadow);border-radius:999px;padding:5px 12px;
+    box-shadow:2px 3px 0 var(--shadow)}
+  .streak b{color:var(--berry)}
+
+  .prompt{background:var(--card);border:3px solid var(--shadow);border-radius:26px;
+    box-shadow:5px 6px 0 var(--shadow);padding:22px 22px 20px;position:relative;margin-bottom:24px;
+    transform:rotate(-.6deg)}
+  .prompt .pin{position:absolute;top:-12px;left:26px;background:var(--teal);color:#fff;
+    font-family:"Bricolage Grotesque";font-weight:700;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;padding:4px 12px;border:2.5px solid var(--shadow);border-radius:999px;
+    box-shadow:2px 2px 0 var(--shadow)}
+  .prompt h1{font-family:"Bricolage Grotesque";font-weight:800;font-size:clamp(26px,5vw,38px);
+    line-height:1.08;margin:8px 0 4px}
+  .prompt .en{color:var(--ink-soft);font-size:15px}
+
+  .microw{display:flex;flex-direction:column;align-items:center;margin:6px 0 26px}
+  .mic{width:108px;height:108px;border-radius:50%;background:var(--tang);border:3.5px solid var(--shadow);
+    box-shadow:0 7px 0 var(--shadow);display:grid;place-items:center;cursor:pointer;
+    transition:transform .12s, box-shadow .12s}
+  .mic:active{transform:translateY(5px);box-shadow:0 2px 0 var(--shadow)}
+  .mic svg{width:42px;height:42px;color:#fff}
+  .mic.live{background:var(--berry);animation:beat 1s ease-in-out infinite}
+  @keyframes beat{50%{transform:scale(1.06)}}
+  .microw .cap{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px;margin-top:14px}
+  .microw .sub{color:var(--ink-soft);font-size:13.5px;margin-top:2px}
+
+  .heard{background:#fdf0df;border:2.5px dashed var(--tang);border-radius:18px;padding:14px 16px;
+    margin-bottom:24px;font-size:15px;color:#5b4a3b;line-height:1.65}
+  .heard .h{font-family:"Bricolage Grotesque";font-weight:700;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--tang);margin-bottom:6px}
+  .heard u{text-decoration-color:var(--teal);text-underline-offset:3px;text-decoration-thickness:2px}
+
+  .lead{font-family:"Bricolage Grotesque";font-weight:700;font-size:20px;margin:0 0 16px}
+  .lead .emo{font-size:22px}
+
+  .deck{display:grid;gap:16px}
+  .tip{background:var(--card);border:3px solid var(--shadow);border-radius:22px;
+    box-shadow:4px 5px 0 var(--shadow);padding:16px 16px 14px;transition:transform .18s,box-shadow .18s}
+  .tip:nth-child(1){transform:rotate(.5deg)} .tip:nth-child(3){transform:rotate(-.5deg)}
+  .tip:hover{transform:translateY(-3px) rotate(0);box-shadow:6px 8px 0 var(--shadow)}
+  .tip .row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .badge{font-family:"Bricolage Grotesque";font-weight:700;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:#fff;border:2.5px solid var(--shadow);border-radius:999px;padding:3px 10px;
+    box-shadow:2px 2px 0 var(--shadow)}
+  .b-teal{background:var(--teal)} .b-sky{background:var(--sky)} .b-berry{background:var(--berry)}
+  .tip h3{font-family:"Bricolage Grotesque";font-weight:800;font-size:18px;margin:0}
+  .tip p{margin:2px 0 12px;color:#4f4032;font-size:15px;line-height:1.5}
+  .say{display:flex;align-items:center;gap:12px;background:var(--sun);border:2.5px solid var(--shadow);
+    border-radius:14px;padding:9px 13px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow);
+    transition:transform .12s,box-shadow .12s}
+  .say:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+  .say .pl{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none}
+  .say .pl svg{width:13px;height:13px;margin-left:1px}
+  .say .t{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px}
+  .say.playing{animation:nudge .45s}@keyframes nudge{30%{transform:rotate(-2deg)}60%{transform:rotate(2deg)}}
+
+  .foot{margin-top:26px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .foot .lab{font-family:"Bricolage Grotesque";font-weight:700;font-size:12px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--ink-soft);margin-right:2px}
+  .chip{font-size:13px;font-weight:700;background:#fff;border:2.5px solid var(--shadow);border-radius:999px;
+    padding:4px 12px;box-shadow:2px 2px 0 var(--shadow)}
+  .next{margin-left:auto;font-family:"Bricolage Grotesque";font-weight:800;font-size:15px;color:#fff;
+    background:var(--teal);border:3px solid var(--shadow);border-radius:14px;padding:11px 18px;cursor:pointer;
+    box-shadow:3px 4px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+  .next:active{transform:translate(2px,3px);box-shadow:1px 1px 0 var(--shadow)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="bar">
+      <div class="logo"><span class="blob"></span>Parla</div>
+      <div class="streak">🔥 <b>9</b>-day streak</div>
+    </div>
+
+    <div class="prompt">
+      <span class="pin">Today's prompt</span>
+      <h1>¿Qué hiciste el fin de semana?</h1>
+      <div class="en">What did you get up to this weekend?</div>
+    </div>
+
+    <div class="microw">
+      <button class="mic" id="mic" aria-label="Record">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"/></svg>
+      </button>
+      <div class="cap" id="cap">Tap & talk!</div>
+      <div class="sub">Just answer like you'd tell a friend — 3 sentences.</div>
+    </div>
+
+    <div class="heard">
+      <div class="h">you said</div>
+      El sábado fui a la montaña con mis amigos y <u>hicimos un asado</u>. <u>Estuvo muy divertido</u> pero yo estoy muy cansado ahora.
+    </div>
+
+    <p class="lead"><span class="emo">🎉</span> Great storytelling! 3 tiny tweaks:</p>
+
+    <div class="deck">
+      <div class="tip">
+        <div class="row"><span class="badge b-sky">grammar</span><h3>Add “todavía”</h3></div>
+        <p>Present tense for how you feel <i>now</i> is right — add <b>todavía</b> (“still”) and it sounds totally native.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Todavía estoy cansado.</span></button>
+      </div>
+      <div class="tip">
+        <div class="row"><span class="badge b-teal">word</span><h3>Go more local</h3></div>
+        <p><b>Asado</b> rocks in Argentina 🇦🇷 — in Spain 🇪🇸 the weekend grill is a <b>barbacoa</b>.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Hicimos una barbacoa.</span></button>
+      </div>
+      <div class="tip">
+        <div class="row"><span class="badge b-berry">native</span><h3>Sound effortless</h3></div>
+        <p>Swap <b>estuvo muy divertido</b> for the phrase locals say without even thinking.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Lo pasamos genial.</span></button>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span class="lab">Working on</span>
+      <span class="chip">past tense</span><span class="chip">ser / estar</span><span class="chip">collocations</span>
+      <button class="next">Next →</button>
+    </div>
+  </div>
+
+<script>
+  const mic=document.getElementById('mic'),cap=document.getElementById('cap');
+  let live=false;
+  mic.addEventListener('click',()=>{live=!live;mic.classList.toggle('live',live);
+    cap.textContent=live?'Listening… tap to finish':'Tap & talk!';});
+  document.querySelectorAll('.say').forEach(b=>b.addEventListener('click',()=>{
+    b.classList.add('playing');setTimeout(()=>b.classList.remove('playing'),450);}));
+</script>
+</body>
+</html>

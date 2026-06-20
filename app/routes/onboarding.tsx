@@ -28,22 +28,48 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function Onboarding() {
   return (
-    <main style={{ maxWidth: 480, margin: "4rem auto", fontFamily: "system-ui" }}>
-      <h1>Set up your learning</h1>
-      <Form method="post">
-        <label>Native language <input name="native_lang" defaultValue="en" /></label>
-        <label>Target language <input name="target_lang" placeholder="es" /></label>
-        <label>Interests (comma-separated) <input name="interests" /></label>
-        <label>
-          Level
-          <select name="level" defaultValue="intermediate">
-            <option>beginner</option>
-            <option>intermediate</option>
-            <option>advanced</option>
-          </select>
-        </label>
-        <button type="submit">Start</button>
-      </Form>
+    <main className="pk-wrap pk-wrap--narrow">
+      <div className="pk-bar">
+        <span className="pk-logo">
+          <span className="blob" />
+          Parla
+        </span>
+      </div>
+
+      <div className="pk-card pk-card--tilt">
+        <span className="pk-pin">Set up</span>
+        <h1 className="pk-h1">What are we learning? 🌍</h1>
+        <p className="pk-sub">A few quick things so prompts feel like you.</p>
+
+        <Form method="post" className="pk-form">
+          <div>
+            <label className="pk-label" htmlFor="native_lang">Native language</label>
+            <input id="native_lang" className="pk-input" name="native_lang" defaultValue="en" />
+          </div>
+          <div>
+            <label className="pk-label" htmlFor="target_lang">Learning</label>
+            <input id="target_lang" className="pk-input" name="target_lang" placeholder="es" />
+          </div>
+          <div>
+            <label className="pk-label" htmlFor="interests">Interests</label>
+            <input
+              id="interests"
+              className="pk-input"
+              name="interests"
+              placeholder="hiking, cooking, football"
+            />
+          </div>
+          <div>
+            <label className="pk-label" htmlFor="level">Level</label>
+            <select id="level" className="pk-select" name="level" defaultValue="intermediate">
+              <option>beginner</option>
+              <option>intermediate</option>
+              <option>advanced</option>
+            </select>
+          </div>
+          <button type="submit" className="pk-btn pk-btn--teal">Start learning →</button>
+        </Form>
+      </div>
     </main>
   );
 }

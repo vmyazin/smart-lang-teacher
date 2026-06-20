@@ -17,14 +17,19 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { repo, chat } = getContext();
   const user = repo.getUser(userId);
   if (!user || !user.target_lang) return redirect("/onboarding");
+  const profile = repo.getSkillItems(userId);
   const prompt = await generatePrompt({
     interests: user.interests,
-    profile: repo.getSkillItems(userId),
+    profile,
     targetLang: user.target_lang,
     now: new Date(),
     chat,
   });
-  return { prompt, user };
+  const tracking = profile
+    .filter((s) => s.status !== "mastered")
+    .slice(0, 4)
+    .map((s) => s.label);
+  return { prompt, user, tracking };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -64,16 +69,58 @@ export async function action({ request }: Route.ActionArgs) {
   return { result };
 }
 
+const PLAY_ICON = (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
+
+/** A phrase pill that plays its TTS audio on tap (falls back to text only if synthesis failed). */
+function Phrase({ text, src }: { text: string; src: string | null }) {
+  const ref = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  return (
+    <button
+      type="button"
+      className={"pk-say" + (playing ? " is-playing" : "")}
+      disabled={!src}
+      onClick={() => {
+        const a = ref.current;
+        if (a) {
+          a.currentTime = 0;
+          void a.play();
+        }
+      }}
+    >
+      {src && <span className="pk-pl">{PLAY_ICON}</span>}
+      <span className="pk-say-t">{text}</span>
+      {src && (
+        <audio
+          ref={ref}
+          src={src}
+          preload="none"
+          onPlay={() => setPlaying(true)}
+          onEnded={() => setPlaying(false)}
+          onPause={() => setPlaying(false)}
+        />
+      )}
+    </button>
+  );
+}
+
 export default function Session() {
-  const { prompt } = useLoaderData<typeof loader>();
+  const { prompt, user, tracking } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [recording, setRecording] = useState(false);
   const chunks = useRef<Blob[]>([]);
   const recorder = useRef<MediaRecorder | null>(null);
 
   const busy = fetcher.state !== "idle";
-  const lesson = fetcher.data && "result" in fetcher.data ? fetcher.data.result?.lesson ?? null : null;
-  const voicedPhrases = fetcher.data && "result" in fetcher.data ? fetcher.data.result?.voicedPhrases ?? [] : [];
+  const result =
+    fetcher.data && "result" in fetcher.data ? fetcher.data.result : null;
+  const lesson = result?.lesson ?? null;
+  const voicedPhrases = result?.voicedPhrases ?? [];
+  const transcript = result?.transcript ?? null;
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -101,34 +148,99 @@ export default function Session() {
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: "3rem auto", fontFamily: "system-ui" }}>
-      <h2>{prompt}</h2>
-      {!recording ? (
-        <button onClick={start} disabled={busy}>
-          {busy ? "Thinking…" : "Record answer"}
+    <main className="pk-wrap">
+      <div className="pk-bar">
+        <span className="pk-logo">
+          <span className="blob" />
+          Parla
+        </span>
+        <span className="pk-pill">
+          {(user.target_lang ?? "es").toUpperCase()}
+          {user.level ? ` · ${user.level}` : ""}
+        </span>
+      </div>
+
+      <div className="pk-card pk-card--tilt">
+        <span className="pk-pin">Today's prompt</span>
+        <h1 className="pk-h1">{prompt}</h1>
+      </div>
+
+      <div className="pk-micwrap">
+        <button
+          type="button"
+          className={"pk-mic" + (recording ? " pk-mic--live" : "")}
+          disabled={busy}
+          onClick={recording ? stop : start}
+          aria-label={recording ? "Stop and submit" : "Record answer"}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z" />
+          </svg>
         </button>
-      ) : (
-        <button onClick={stop}>Stop & submit</button>
+        <div className="pk-cap">
+          {busy ? "Thinking…" : recording ? "Listening… tap to finish" : "Tap & talk!"}
+        </div>
+        <div className="pk-cap-sub">
+          Answer like you'd tell a friend — about three sentences.
+        </div>
+      </div>
+
+      {transcript && (
+        <div className="pk-heard">
+          <div className="pk-heard-h">you said</div>
+          {transcript}
+        </div>
       )}
+
       {lesson && (
-        <section style={{ marginTop: "2rem" }}>
-          <p>{lesson.intro}</p>
-          {lesson.points.map((p: { title: string; body: string; phrase: string }, i: number) => {
-            const vp = voicedPhrases[i] ?? null;
-            const audioSrc = vp?.audio_path ? `/audio/${fileBasename(vp.audio_path)}` : null;
-            return (
-              <article key={i}>
-                <h3>{p.title}</h3>
-                <p>{p.body}</p>
-                <em>{p.phrase}</em>
-                {audioSrc && (
-                  <audio controls src={audioSrc} style={{ display: "block", marginTop: "0.5rem" }} />
-                )}
-              </article>
-            );
-          })}
-          <button onClick={() => location.reload()}>Next prompt</button>
-        </section>
+        <>
+          <p className="pk-lead">
+            <span className="pk-emo">🎉</span> {lesson.intro}
+          </p>
+
+          {lesson.points.length > 0 && (
+            <div className="pk-deck">
+              {lesson.points.map(
+                (p: { title: string; body: string; phrase: string }, i: number) => {
+                  const vp = voicedPhrases[i] ?? null;
+                  const audioSrc = vp?.audio_path
+                    ? `/audio/${fileBasename(vp.audio_path)}`
+                    : null;
+                  return (
+                    <div className="pk-tip" key={i}>
+                      <div className="pk-tip-row">
+                        <span className={`pk-badge pk-badge--${i % 3}`}>{i + 1}</span>
+                        <h3>{p.title}</h3>
+                      </div>
+                      <p>{p.body}</p>
+                      <Phrase text={p.phrase} src={audioSrc} />
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          )}
+
+          <div className="pk-foot">
+            {tracking.length > 0 && (
+              <>
+                <span className="pk-foot-lab">Working on</span>
+                {tracking.map((t) => (
+                  <span className="pk-chip" key={t}>
+                    {t}
+                  </span>
+                ))}
+              </>
+            )}
+            <button
+              type="button"
+              className="pk-btn pk-btn--teal pk-spacer"
+              onClick={() => location.reload()}
+            >
+              Next →
+            </button>
+          </div>
+        </>
       )}
     </main>
   );

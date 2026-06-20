@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parla · Field Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f4ede0; --paper-2:#efe6d6; --ink:#20180f; --ink-soft:#6a5c49;
+    --rule:#cdbfa6; --accent:#b14a25; --accent-2:#3f5e4e; --gold:#caa052;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Spectral",Georgia,serif;
+    font-size:18px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(120% 80% at 80% -10%, rgba(202,160,82,.16), transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+  .page{max-width:760px;margin:0 auto;padding:56px 32px 96px;position:relative}
+
+  header.mast{display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:1.5px solid var(--ink);padding-bottom:14px}
+  .word{font-family:"Fraunces",serif;font-weight:600;font-size:30px;letter-spacing:.01em}
+  .word b{color:var(--accent);font-style:italic;font-weight:600}
+  .issue{font-family:"Fraunces",serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+
+  .kicker{font-family:"Fraunces",serif;font-size:12px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--accent);margin:40px 0 10px}
+  .prompt{font-family:"Fraunces",serif;font-weight:300;font-size:clamp(34px,5.5vw,52px);
+    line-height:1.08;margin:0 0 6px;letter-spacing:-.01em}
+  .gloss{color:var(--ink-soft);font-style:italic;margin:0 0 30px}
+
+  .rec{display:flex;align-items:center;gap:22px;margin:8px 0 26px}
+  .dot{width:84px;height:84px;border-radius:50%;border:1.5px solid var(--ink);
+    background:radial-gradient(circle at 38% 32%, #fff6e7, var(--paper-2));
+    display:grid;place-items:center;cursor:pointer;position:relative;flex:none;
+    transition:transform .25s ease, box-shadow .25s ease}
+  .dot:hover{transform:translateY(-2px);box-shadow:5px 7px 0 rgba(32,24,15,.16)}
+  .dot svg{width:30px;height:30px;color:var(--accent)}
+  .dot.live{border-color:var(--accent);background:#fff}
+  .dot.live::after{content:"";position:absolute;inset:-10px;border-radius:50%;
+    border:1.5px solid var(--accent);animation:ring 1.6s ease-out infinite;opacity:0}
+  @keyframes ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}
+  .rec .label{font-family:"Fraunces",serif;font-size:15px;letter-spacing:.04em}
+  .rec .label small{display:block;color:var(--ink-soft);font-family:"Spectral";font-style:italic;letter-spacing:0}
+
+  .heard{border-left:2px solid var(--rule);padding:4px 0 4px 20px;margin:0 0 44px;
+    color:var(--ink-soft);font-style:italic}
+  .heard em{color:var(--accent-2);font-style:normal;border-bottom:1px dotted var(--accent-2)}
+
+  .lead{font-family:"Fraunces",serif;font-weight:300;font-size:24px;line-height:1.4;margin:0 0 8px}
+  .lead .by{display:block;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:10px;font-weight:500}
+
+  ol.notes{list-style:none;counter-reset:n;margin:30px 0 0;padding:0}
+  ol.notes li{counter-increment:n;position:relative;padding:22px 0 24px 64px;
+    border-top:1px solid var(--rule)}
+  ol.notes li::before{content:counter(n,decimal-leading-zero);position:absolute;left:0;top:22px;
+    font-family:"Fraunces",serif;font-size:13px;letter-spacing:.1em;color:var(--accent);
+    border:1px solid var(--accent);border-radius:50%;width:34px;height:34px;display:grid;place-items:center}
+  .nt-h{font-family:"Fraunces",serif;font-weight:500;font-size:19px;margin:0 0 4px}
+  .nt-b{margin:0 0 14px;color:#33291c}
+  .say{display:inline-flex;align-items:center;gap:12px;background:var(--paper-2);
+    border:1px solid var(--rule);border-radius:2px;padding:9px 14px;cursor:pointer;
+    transition:background .2s,border-color .2s}
+  .say:hover{background:#fff;border-color:var(--accent)}
+  .say .play{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;
+    display:grid;place-items:center;flex:none}
+  .say .play svg{width:11px;height:11px;margin-left:1px}
+  .say .txt{font-family:"Fraunces",serif;font-style:italic;font-size:17px}
+  .say.playing .play{animation:pp .5s ease}
+  @keyframes pp{50%{transform:scale(1.25)}}
+
+  footer.tags{margin-top:54px;border-top:1.5px solid var(--ink);padding-top:16px;
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  footer.tags .t-lab{font-family:"Fraunces",serif;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ink-soft);margin-right:6px}
+  .chip{font-size:13px;font-style:italic;color:var(--accent-2);border:1px solid var(--rule);
+    padding:3px 11px;border-radius:20px;background:rgba(255,255,255,.4)}
+  .next{margin-left:auto;font-family:"Fraunces",serif;font-size:14px;letter-spacing:.04em;
+    color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--accent)}
+  .next:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="mast">
+      <div class="word">Par<b>la</b></div>
+      <div class="issue">No. 014 · Español</div>
+    </header>
+
+    <p class="kicker">Today's prompt</p>
+    <h1 class="prompt">¿Qué hiciste el fin de&nbsp;semana?</h1>
+    <p class="gloss">What did you get up to this weekend?</p>
+
+    <div class="rec">
+      <button class="dot" id="dot" aria-label="Record">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"/></svg>
+      </button>
+      <div class="label" id="lab">Speak your answer<small>Tap the circle — about three sentences is plenty.</small></div>
+    </div>
+
+    <blockquote class="heard">“El sábado fui a la montaña con mis amigos y <em>hicimos un asado</em>. <em>Estuvo muy divertido</em> pero yo estoy muy cansado ahora.”</blockquote>
+
+    <p class="lead"><span class="by">A note from your tutor</span>Lovely — that really painted a picture. A few small touches and you'd pass for a local:</p>
+
+    <ol class="notes">
+      <li>
+        <h3 class="nt-h">Lean on “todavía”</h3>
+        <p class="nt-b">You used the present to say how you feel now — exactly right. Natives often add <i>todavía</i> (“still”) to make the lingering tiredness feel natural.</p>
+        <button class="say"><span class="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="txt">Todavía estoy cansado.</span></button>
+      </li>
+      <li>
+        <h3 class="nt-h">A more local word</h3>
+        <p class="nt-b"><i>Asado</i> is perfect in Argentina. Across much of Spain you'll hear <i>barbacoa</i> for the same weekend grill.</p>
+        <button class="say"><span class="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="txt">Hicimos una barbacoa.</span></button>
+      </li>
+      <li>
+        <h3 class="nt-h">The native shortcut</h3>
+        <p class="nt-b">Instead of <i>estuvo muy divertido</i>, locals reach for a set phrase that just sounds effortless.</p>
+        <button class="say"><span class="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="txt">Lo pasamos genial.</span></button>
+      </li>
+    </ol>
+
+    <footer class="tags">
+      <span class="t-lab">Tracking</span>
+      <span class="chip">past tense</span>
+      <span class="chip">ser vs estar</span>
+      <span class="chip">collocations</span>
+      <a class="next" href="#">Next prompt →</a>
+    </footer>
+  </div>
+
+<script>
+  const dot=document.getElementById('dot'),lab=document.getElementById('lab');
+  let live=false;
+  dot.addEventListener('click',()=>{live=!live;dot.classList.toggle('live',live);
+    lab.innerHTML=live?'Listening…<small>Tap again when you’re done.</small>':'Speak your answer<small>Tap the circle — about three sentences is plenty.</small>';});
+  document.querySelectorAll('.say').forEach(b=>b.addEventListener('click',()=>{
+    b.classList.add('playing');setTimeout(()=>b.classList.remove('playing'),500);}));
+</script>
+</body>
+</html>

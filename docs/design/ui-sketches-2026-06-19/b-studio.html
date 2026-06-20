@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parla · Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0b0c0e; --panel:#141619; --panel-2:#1b1e22; --line:#2a2e34;
+    --txt:#e8eaed; --dim:#8b9099; --lime:#c8f250; --lime-dim:#88a232; --cool:#7fd1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:"Sora",system-ui,sans-serif; font-weight:300;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(60% 40% at 50% -5%, rgba(200,242,80,.10), transparent 60%),
+      radial-gradient(50% 50% at 90% 110%, rgba(127,209,255,.08), transparent 60%);
+    min-height:100%;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:40px 26px 80px}
+
+  .top{display:flex;align-items:center;justify-content:space-between;
+    font-family:"DM Mono",monospace;font-size:12px;letter-spacing:.04em;color:var(--dim)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:"Syne";font-weight:800;
+    font-size:20px;letter-spacing:.01em;color:var(--txt)}
+  .brand .bead{width:10px;height:10px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 14px var(--lime)}
+  .top .meta span{color:var(--lime-dim)}
+
+  .promptcard{margin:34px 0 14px;text-align:center}
+  .promptcard .tag{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--lime-dim)}
+  .promptcard h1{font-family:"Syne",sans-serif;font-weight:700;
+    font-size:clamp(30px,5.4vw,46px);line-height:1.06;margin:12px 0 8px;letter-spacing:-.01em}
+  .promptcard .en{color:var(--dim);font-size:15px}
+
+  .stage{display:grid;place-items:center;padding:30px 0 8px}
+  .orb{position:relative;width:172px;height:172px;display:grid;place-items:center;cursor:pointer}
+  .orb .core{width:118px;height:118px;border-radius:50%;
+    background:radial-gradient(circle at 38% 30%, #20242a, #0e1013);
+    border:1px solid var(--line);display:grid;place-items:center;
+    transition:transform .3s cubic-bezier(.2,.8,.2,1), border-color .3s}
+  .orb .core svg{width:40px;height:40px;color:var(--lime)}
+  .orb .r{position:absolute;border-radius:50%;border:1px solid rgba(200,242,80,.30)}
+  .orb .r1{inset:14px} .orb .r2{inset:0}
+  .orb:hover .core{transform:scale(1.04);border-color:var(--lime-dim)}
+  .orb.live .core{border-color:var(--lime);box-shadow:0 0 50px rgba(200,242,80,.25)}
+  .orb.live .r{animation:pulse 2s ease-out infinite}
+  .orb.live .r2{animation-delay:.6s}
+  @keyframes pulse{0%{transform:scale(.62);opacity:.8}100%{transform:scale(1.18);opacity:0}}
+  .wave{display:flex;gap:5px;align-items:flex-end;height:34px;margin:22px 0 4px;justify-content:center}
+  .wave i{width:4px;background:var(--lime);border-radius:3px;height:8px;opacity:.45}
+  .orb.live ~ .wave i{animation:bar 1s ease-in-out infinite;opacity:.9}
+  .wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.22s}
+  .wave i:nth-child(4){animation-delay:.34s}.wave i:nth-child(5){animation-delay:.16s}
+  .wave i:nth-child(6){animation-delay:.4s}.wave i:nth-child(7){animation-delay:.27s}
+  .wave i:nth-child(8){animation-delay:.12s}.wave i:nth-child(9){animation-delay:.3s}
+  @keyframes bar{0%,100%{height:8px}50%{height:32px}}
+  .hint{font-family:"DM Mono",monospace;font-size:12px;letter-spacing:.05em;color:var(--dim);text-align:center}
+
+  .heard{margin:34px 0 26px;padding:16px 18px;border-radius:14px;background:var(--panel);
+    border:1px solid var(--line);font-size:15px;color:var(--dim);line-height:1.7}
+  .heard b{font-family:"DM Mono",monospace;display:block;font-size:10px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--lime-dim);font-weight:500;margin-bottom:8px}
+  .heard mark{background:none;color:var(--cool);text-decoration:underline;text-decoration-style:dotted;
+    text-underline-offset:3px}
+
+  .lead{font-size:17px;color:var(--txt);font-weight:400;margin:0 0 18px;line-height:1.5}
+  .lead span{color:var(--lime)}
+
+  .cards{display:grid;gap:14px}
+  .card{background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime);opacity:.6}
+  .card .k{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--lime-dim)}
+  .card h3{font-family:"Syne";font-weight:700;font-size:18px;margin:6px 0 6px}
+  .card p{margin:0 0 14px;color:var(--dim);font-size:15px;line-height:1.55}
+  .say{display:flex;align-items:center;gap:13px;background:#0d0f12;border:1px solid var(--line);
+    border-radius:11px;padding:10px 14px;cursor:pointer;transition:border-color .2s,background .2s}
+  .say:hover{border-color:var(--lime-dim);background:#0f1216}
+  .say .pl{width:30px;height:30px;border-radius:50%;background:var(--lime);color:#0b0c0e;
+    display:grid;place-items:center;flex:none}
+  .say .pl svg{width:13px;height:13px;margin-left:1px}
+  .say .t{font-size:17px;color:var(--txt)}
+  .say.playing .pl{animation:pp .5s}@keyframes pp{50%{transform:scale(1.22)}}
+
+  .foot{margin-top:30px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .foot .lab{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+  .chip{font-family:"DM Mono",monospace;font-size:12px;color:var(--cool);border:1px solid var(--line);
+    padding:4px 11px;border-radius:8px;background:#0e1216}
+  .next{margin-left:auto;background:var(--lime);color:#0b0c0e;border:0;font-family:"Syne";font-weight:700;
+    font-size:14px;padding:11px 20px;border-radius:11px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .next:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(200,242,80,.22)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand"><span class="bead"></span>PARLA</div>
+      <div class="meta">session <span>014</span> · es-ES · lvl <span>B1</span></div>
+    </div>
+
+    <div class="promptcard">
+      <div class="tag">Today's prompt</div>
+      <h1>¿Qué hiciste el fin de semana?</h1>
+      <div class="en">What did you get up to this weekend?</div>
+    </div>
+
+    <div class="stage">
+      <div class="orb" id="orb" aria-label="Record">
+        <span class="r r1"></span><span class="r r2"></span>
+        <span class="core">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"/></svg>
+        </span>
+      </div>
+    </div>
+    <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="hint" id="hint">press to speak · ~3 sentences</div>
+
+    <div class="heard">
+      <b>What we heard</b>
+      El sábado fui a la montaña con mis amigos y <mark>hicimos un asado</mark>. <mark>Estuvo muy divertido</mark> pero yo estoy muy cansado ahora.
+    </div>
+
+    <p class="lead">Clean delivery. <span>Three quick upgrades</span> to sound more native:</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="k">grammar · feel</div>
+        <h3>Add “todavía”</h3>
+        <p>Present tense for how you feel now is right. Natives add <em>todavía</em> (“still”) so the tiredness lingers naturally.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Todavía estoy cansado.</span></button>
+      </div>
+      <div class="card">
+        <div class="k">word choice</div>
+        <h3>A more local word</h3>
+        <p><em>Asado</em> is spot-on in Argentina; in much of Spain the weekend grill is a <em>barbacoa</em>.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Hicimos una barbacoa.</span></button>
+      </div>
+      <div class="card">
+        <div class="k">naturalness</div>
+        <h3>The native shortcut</h3>
+        <p>Swap <em>estuvo muy divertido</em> for the set phrase locals reach for without thinking.</p>
+        <button class="say"><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="t">Lo pasamos genial.</span></button>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span class="lab">tracking</span>
+      <span class="chip">past tense</span><span class="chip">ser·estar</span><span class="chip">collocations</span>
+      <button class="next">Next ↗</button>
+    </div>
+  </div>
+
+<script>
+  const orb=document.getElementById('orb'),hint=document.getElementById('hint');
+  let live=false;
+  orb.addEventListener('click',()=>{live=!live;orb.classList.toggle('live',live);
+    hint.textContent=live?'listening… press to stop':'press to speak · ~3 sentences';});
+  document.querySelectorAll('.say').forEach(b=>b.addEventListener('click',()=>{
+    b.classList.add('playing');setTimeout(()=>b.classList.remove('playing'),500);}));
+</script>
+</body>
+</html>
