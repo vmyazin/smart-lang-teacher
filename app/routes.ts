@@ -6,4 +6,5 @@ export default [
   route("session", "routes/session.tsx"),
   route("session/progress", "routes/session.progress.tsx"),
   route("audio/:name", "routes/audio.tsx"),
+  route("profile", "routes/profile.tsx"),
 ] satisfies RouteConfig;

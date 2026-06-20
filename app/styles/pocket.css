@@ -232,3 +232,16 @@ body {
 }
 .pk-nav-link:hover { transform: translateY(-1px); }
 .pk-nav-link.is-active { background: var(--tang); color: #fff; }
+
+/* section heading + empty + skill snapshot */
+.pk-section-h { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 20px; margin: 30px 0 12px; }
+.pk-empty { color: var(--ink-soft); background: #fdf0df; border: 2.5px dashed var(--tang); border-radius: 16px; padding: 16px; }
+.pk-skill-group { margin-bottom: 18px; }
+.pk-skill-group-h { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 15px; color: var(--ink-soft); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+.pk-skill-count { color: var(--berry); }
+.pk-skill-items { display: flex; flex-direction: column; gap: 8px; }
+.pk-skill-item { display: flex; align-items: center; gap: 10px; background: #fff; border: 2.5px solid var(--shadow); border-radius: 14px; box-shadow: 3px 3px 0 var(--shadow); padding: 10px 14px; }
+.pk-skill-cat { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--sky); border: 2px solid var(--shadow); border-radius: 999px; padding: 2px 8px; }
+.pk-skill-label { font-weight: 700; }
+.pk-skill-meta { margin-left: auto; color: var(--ink-soft); font-weight: 700; }
+.pk-skill-due { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 11px; color: #fff; background: var(--berry); border: 2px solid var(--shadow); border-radius: 999px; padding: 2px 8px; }
