@@ -219,3 +219,16 @@ body {
   border-radius: 999px; padding: 4px 12px; box-shadow: 2px 2px 0 var(--shadow);
 }
 .pk-spacer { margin-left: auto; }
+
+/* shared header nav */
+.pk-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 12px; flex-wrap: wrap; }
+.pk-nav .pk-logo { text-decoration: none; }
+.pk-nav-links { display: flex; gap: 8px; }
+.pk-nav-link {
+  font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 14px;
+  text-decoration: none; color: var(--ink); background: #fff;
+  border: 2.5px solid var(--shadow); border-radius: 999px; padding: 6px 14px;
+  box-shadow: 2px 2px 0 var(--shadow); transition: transform 0.1s, box-shadow 0.1s;
+}
+.pk-nav-link:hover { transform: translateY(-1px); }
+.pk-nav-link.is-active { background: var(--tang); color: #fff; }
