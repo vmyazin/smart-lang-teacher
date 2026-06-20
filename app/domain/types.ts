@@ -7,6 +7,7 @@ export type Dimension =
 
 export type Severity = "low" | "medium" | "high";
 export type SkillStatus = "active" | "improving" | "mastered";
+export type TurnStatus = "answered" | "skipped";
 
 export interface Issue {
   dimension: Dimension;
@@ -38,6 +39,7 @@ export interface User {
   target_lang: string | null;
   interests: string[];
   level: string | null;
+  current_prompt: string | null;
 }
 
 export interface VoicedPhrase {
@@ -61,6 +63,7 @@ export interface TurnSummary {
   created_at: string;
   prompt_text: string;
   transcript: string | null;
+  status: TurnStatus;
   issueCount: number;
   dimensions: Dimension[];
 }
@@ -71,6 +74,7 @@ export interface TurnDetail {
   prompt_text: string;
   transcript: string | null;
   audio_path: string | null;
+  status: TurnStatus;
   issues: Issue[];
   lesson: Lesson | null;
   voicedPhrases: VoicedPhrase[];

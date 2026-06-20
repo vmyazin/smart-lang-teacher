@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   native_lang TEXT,
   target_lang TEXT,
   interests TEXT NOT NULL DEFAULT '[]',
-  level TEXT
+  level TEXT,
+  current_prompt TEXT
 );
 CREATE TABLE IF NOT EXISTS sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS turns (
   prompt_text TEXT NOT NULL,
   audio_path TEXT,
   transcript TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'answered'
 );
 CREATE TABLE IF NOT EXISTS diagnoses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +55,13 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 `;
 
+function ensureColumn(db: Db, table: string, column: string, ddl: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+
 export function openDb(path: string): Db {
   // better-sqlite3 won't create missing parent directories; do it ourselves
   // (skip for the in-memory database used in tests).
@@ -62,5 +71,7 @@ export function openDb(path: string): Db {
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
+  ensureColumn(db, "users", "current_prompt", "current_prompt TEXT");
+  ensureColumn(db, "turns", "status", "status TEXT NOT NULL DEFAULT 'answered'");
   return db;
 }

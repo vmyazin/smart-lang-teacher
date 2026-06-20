@@ -162,3 +162,55 @@ describe("listSkillFacets", () => {
     expect(repo.listSkillFacets(user.id)).toEqual([]);
   });
 });
+
+describe("current_prompt + status", () => {
+  it("round-trips current_prompt (set, read, clear)", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const u = repo.createUser({ display_name: "pp", passcode_hash: "h" });
+    expect(repo.getUser(u.id)!.current_prompt).toBeNull();
+    repo.setCurrentPrompt(u.id, "¿Como vai?");
+    expect(repo.getUser(u.id)!.current_prompt).toBe("¿Como vai?");
+    repo.setCurrentPrompt(u.id, null);
+    expect(repo.getUser(u.id)!.current_prompt).toBeNull();
+  });
+
+  it("createTurn stores status (default answered, explicit skipped)", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const u = repo.createUser({ display_name: "st", passcode_hash: "h" });
+    const sid = repo.createSession(u.id, "2026-06-20T00:00:00.000Z");
+    const answered = repo.createTurn({ session_id: sid, prompt_text: "a", created_at: "2026-06-20T00:00:00.000Z" });
+    const skipped = repo.createTurn({ session_id: sid, prompt_text: "b", created_at: "2026-06-20T00:01:00.000Z", status: "skipped" });
+    const list = repo.listTurns(u.id);
+    const byId = Object.fromEntries(list.map((t) => [t.id, t.status]));
+    expect(byId[answered]).toBe("answered");
+    expect(byId[skipped]).toBe("skipped");
+    expect(repo.getTurnDetail(skipped, u.id)!.status).toBe("skipped");
+  });
+});
+
+describe("deleteTurn", () => {
+  it("deletes the turn + its diagnosis/lesson and returns audio paths", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const { userId, turnId } = seedTurn(repo, "alice"); // seeds audio_path + a voiced phrase
+    const res = repo.deleteTurn(turnId, userId);
+    expect(res).not.toBeNull();
+    expect(res!.audioPaths).toContain("data/audio/rec.webm");
+    expect(res!.audioPaths).toContain("data/audio/phrase1.webm");
+    expect(repo.getTurnDetail(turnId, userId)).toBeNull();
+    expect(repo.listTurns(userId)).toHaveLength(0);
+  });
+
+  it("returns null and deletes nothing for another user's turn", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const a = seedTurn(repo, "alice");
+    const b = seedTurn(repo, "bob");
+    expect(repo.deleteTurn(a.turnId, b.userId)).toBeNull();
+    expect(repo.getTurnDetail(a.turnId, a.userId)).not.toBeNull(); // still there
+  });
+
+  it("returns null for a missing turn", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const { userId } = seedTurn(repo, "alice");
+    expect(repo.deleteTurn(99999, userId)).toBeNull();
+  });
+});
