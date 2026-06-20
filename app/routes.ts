@@ -7,4 +7,5 @@ export default [
   route("session/progress", "routes/session.progress.tsx"),
   route("audio/:name", "routes/audio.tsx"),
   route("profile", "routes/profile.tsx"),
+  route("history", "routes/history.tsx"),
 ] satisfies RouteConfig;

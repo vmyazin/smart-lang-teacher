@@ -245,3 +245,19 @@ body {
 .pk-skill-label { font-weight: 700; }
 .pk-skill-meta { margin-left: auto; color: var(--ink-soft); font-weight: 700; }
 .pk-skill-due { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 11px; color: #fff; background: var(--berry); border: 2px solid var(--shadow); border-radius: 999px; padding: 2px 8px; }
+
+/* history search + list */
+.pk-search { display: flex; gap: 10px; margin: 14px 0 20px; flex-wrap: wrap; }
+.pk-search .pk-input { flex: 1; min-width: 160px; }
+.pk-history { display: flex; flex-direction: column; gap: 12px; }
+.pk-history-row {
+  display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink);
+  background: #fff; border: 3px solid var(--shadow); border-radius: 18px;
+  box-shadow: 4px 5px 0 var(--shadow); padding: 14px 16px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.pk-history-row:hover { transform: translateY(-2px); box-shadow: 6px 7px 0 var(--shadow); }
+.pk-history-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pk-history-date { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 12px; color: var(--ink-soft); }
+.pk-history-prompt { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-history-badge { margin-left: auto; flex: none; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 12px; color: #fff; background: var(--teal); border: 2.5px solid var(--shadow); border-radius: 999px; padding: 4px 10px; box-shadow: 2px 2px 0 var(--shadow); }
