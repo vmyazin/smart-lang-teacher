@@ -116,6 +116,12 @@ No new audio infrastructure. The existing `/audio/:name` resource route serves a
 - Detail page renders one `<audio controls>` for your full answer recording, and a replay
   control per lesson point for its native phrase. A missing audio file simply hides that
   player (the `/audio` route 404s safely).
+- **Known authorization limitation:** the `/audio/:name` route has no session/ownership check —
+  audio bytes are protected only by the unguessability of the random UUID filename, not by
+  `userId`. This is a pre-existing, consciously-reused tradeoff acceptable for a **local-only,
+  personal app**; turn-level authorization (which lessons/transcripts a user can list and open)
+  is correctly enforced in the repository. If this app ever becomes multi-tenant/public, gate
+  `/audio/:name` behind auth + an ownership lookup (filename → turn → user).
 
 ## 7. Profile editing & skill snapshot
 
