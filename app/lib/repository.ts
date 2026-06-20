@@ -1,5 +1,13 @@
 import type { Db } from "./db";
-import type { Issue, Lesson, SkillItem, User, VoicedPhrase } from "../domain/types";
+import type {
+  Issue,
+  Lesson,
+  SkillItem,
+  TurnDetail,
+  TurnSummary,
+  User,
+  VoicedPhrase,
+} from "../domain/types";
 
 function rowToUser(row: any): User {
   return {
@@ -89,6 +97,31 @@ export function createRepository(db: Db) {
       return db
         .prepare("SELECT * FROM skill_items WHERE user_id = ?")
         .all(userId) as SkillItem[];
+    },
+
+    getTurnDetail(turnId: number, userId: number): TurnDetail | null {
+      const row = db
+        .prepare(
+          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, t.audio_path,
+                  d.issues AS issues, l.content AS lesson, l.voiced_phrases AS voiced
+           FROM turns t
+           JOIN sessions s  ON t.session_id = s.id
+           LEFT JOIN diagnoses d ON d.turn_id = t.id
+           LEFT JOIN lessons   l ON l.turn_id = t.id
+           WHERE t.id = ? AND s.user_id = ?`,
+        )
+        .get(turnId, userId) as any;
+      if (!row) return null;
+      return {
+        id: row.id,
+        created_at: row.created_at,
+        prompt_text: row.prompt_text,
+        transcript: row.transcript,
+        audio_path: row.audio_path,
+        issues: row.issues ? JSON.parse(row.issues) : [],
+        lesson: row.lesson ? JSON.parse(row.lesson) : null,
+        voicedPhrases: row.voiced ? JSON.parse(row.voiced) : [],
+      };
     },
 
     replaceSkillItems(userId: number, items: SkillItem[]): void {
