@@ -261,3 +261,14 @@ body {
 .pk-history-date { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 12px; color: var(--ink-soft); }
 .pk-history-prompt { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pk-history-badge { margin-left: auto; flex: none; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 12px; color: #fff; background: var(--teal); border: 2.5px solid var(--shadow); border-radius: 999px; padding: 4px 10px; box-shadow: 2px 2px 0 var(--shadow); }
+
+/* history detail */
+.pk-back { display: inline-block; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 14px; color: var(--ink); text-decoration: none; margin-bottom: 14px; }
+.pk-back:hover { color: var(--tang); }
+.pk-audio { display: block; width: 100%; margin-top: 10px; height: 36px; }
+.pk-phrase-line { display: flex; flex-direction: column; gap: 6px; }
+.pk-phrase-text { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 16px; background: var(--sun); border: 2.5px solid var(--shadow); border-radius: 14px; box-shadow: 3px 3px 0 var(--shadow); padding: 9px 13px; }
+.pk-diag { margin-top: 22px; background: #fff; border: 2.5px solid var(--shadow); border-radius: 16px; box-shadow: 3px 3px 0 var(--shadow); padding: 12px 16px; }
+.pk-diag summary { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; cursor: pointer; }
+.pk-diag ul { margin: 10px 0 0; padding-left: 18px; }
+.pk-diag li { margin-bottom: 8px; font-size: 14px; line-height: 1.5; }

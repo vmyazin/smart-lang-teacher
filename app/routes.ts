@@ -8,4 +8,5 @@ export default [
   route("audio/:name", "routes/audio.tsx"),
   route("profile", "routes/profile.tsx"),
   route("history", "routes/history.tsx"),
+  route("history/:turnId", "routes/history.turn.tsx"),
 ] satisfies RouteConfig;
