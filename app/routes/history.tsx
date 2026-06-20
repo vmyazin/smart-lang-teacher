@@ -37,7 +37,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (String(form.get("intent")) === "delete") {
     const turnId = Number(form.get("turnId"));
-    if (Number.isInteger(turnId)) {
+    if (Number.isInteger(turnId) && turnId > 0) {
       const { repo } = getContext();
       const res = repo.deleteTurn(turnId, userId);
       if (res) {
