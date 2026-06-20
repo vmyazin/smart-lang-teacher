@@ -4,4 +4,5 @@ export default [
   index("routes/_index.tsx"),
   route("onboarding", "routes/onboarding.tsx"),
   route("session", "routes/session.tsx"),
+  route("audio/:name", "routes/audio.tsx"),
 ] satisfies RouteConfig;

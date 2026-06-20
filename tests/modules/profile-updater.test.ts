@@ -84,6 +84,7 @@ describe("updateProfile", () => {
     };
     const out = updateProfile([existing], [], now);
     expect(out[0].status).toBe("improving");
+    expect(new Date(out[0].next_review_at).getTime()).toBeGreaterThan(now.getTime());
   });
 
   it("leaves a not-yet-due untouched item unchanged", () => {

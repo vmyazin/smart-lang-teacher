@@ -66,6 +66,7 @@ export async function runTurn(input: {
       const path = await input.saveAudio(bytes);
       voicedPhrases.push({ text: point.phrase, audio_path: path });
     } catch {
+      /* best-effort */ console.warn("TTS synthesis failed for a phrase");
       voicedPhrases.push({ text: point.phrase, audio_path: null });
     }
   }

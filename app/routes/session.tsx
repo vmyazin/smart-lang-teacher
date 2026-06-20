@@ -1,10 +1,15 @@
 import { useRef, useState } from "react";
-import { redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
 import { getUserId } from "../lib/session.server";
 import { generatePrompt } from "../modules/prompt-generator";
 import { runTurn } from "../modules/run-turn";
+
+/** Extract just the filename from a server-side path (works in browser without node:path). */
+function fileBasename(p: string): string {
+  return p.replace(/\\/g, "/").split("/").pop() ?? p;
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const userId = await getUserId(request);
@@ -61,11 +66,14 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function Session() {
   const { prompt } = useLoaderData<typeof loader>();
-  const [lesson, setLesson] = useState<any>(null);
+  const fetcher = useFetcher<typeof action>();
   const [recording, setRecording] = useState(false);
-  const [busy, setBusy] = useState(false);
   const chunks = useRef<Blob[]>([]);
   const recorder = useRef<MediaRecorder | null>(null);
+
+  const busy = fetcher.state !== "idle";
+  const lesson = fetcher.data && "result" in fetcher.data ? fetcher.data.result?.lesson ?? null : null;
+  const voicedPhrases = fetcher.data && "result" in fetcher.data ? fetcher.data.result?.voicedPhrases ?? [] : [];
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -85,15 +93,11 @@ export default function Session() {
     });
     mr.stream.getTracks().forEach((t) => t.stop());
     setRecording(false);
-    setBusy(true);
     const blob = new Blob(chunks.current, { type: "audio/webm" });
     const fd = new FormData();
     fd.append("prompt", prompt);
     fd.append("audio", blob, "audio.webm");
-    const res = await fetch("/session", { method: "post", body: fd });
-    const data = await res.json();
-    setLesson(data.result?.lesson ?? null);
-    setBusy(false);
+    fetcher.submit(fd, { method: "post", encType: "multipart/form-data" });
   }
 
   return (
@@ -109,13 +113,20 @@ export default function Session() {
       {lesson && (
         <section style={{ marginTop: "2rem" }}>
           <p>{lesson.intro}</p>
-          {lesson.points.map((p: any, i: number) => (
-            <article key={i}>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-              <em>{p.phrase}</em>
-            </article>
-          ))}
+          {lesson.points.map((p: { title: string; body: string; phrase: string }, i: number) => {
+            const vp = voicedPhrases[i] ?? null;
+            const audioSrc = vp?.audio_path ? `/audio/${fileBasename(vp.audio_path)}` : null;
+            return (
+              <article key={i}>
+                <h3>{p.title}</h3>
+                <p>{p.body}</p>
+                <em>{p.phrase}</em>
+                {audioSrc && (
+                  <audio controls src={audioSrc} style={{ display: "block", marginTop: "0.5rem" }} />
+                )}
+              </article>
+            );
+          })}
           <button onClick={() => location.reload()}>Next prompt</button>
         </section>
       )}

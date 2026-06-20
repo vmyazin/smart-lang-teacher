@@ -71,7 +71,7 @@ export function updateProfile(
     }
   }
 
-  for (const [key, item] of byKey) {
+  for (const [key, item] of [...byKey]) {
     if (touched.has(key)) continue;
     if (new Date(item.next_review_at).getTime() <= now.getTime()) {
       byKey.set(key, {
