@@ -5,6 +5,7 @@ import type {
   SkillItem,
   TurnDetail,
   TurnSummary,
+  TurnStatus,
   User,
   VoicedPhrase,
 } from "../domain/types";
@@ -17,6 +18,7 @@ function rowToUser(row: any): User {
     target_lang: row.target_lang,
     interests: JSON.parse(row.interests),
     level: row.level,
+    current_prompt: row.current_prompt ?? null,
   };
 }
 
@@ -53,6 +55,10 @@ export function createRepository(db: Db) {
       ).run(p.native_lang, p.target_lang, JSON.stringify(p.interests), p.level, id);
     },
 
+    setCurrentPrompt(userId: number, prompt: string | null): void {
+      db.prepare("UPDATE users SET current_prompt = ? WHERE id = ?").run(prompt, userId);
+    },
+
     createSession(userId: number, startedAt: string): number {
       const info = db
         .prepare("INSERT INTO sessions (user_id, started_at) VALUES (?, ?)")
@@ -64,12 +70,13 @@ export function createRepository(db: Db) {
       session_id: number;
       prompt_text: string;
       created_at: string;
+      status?: TurnStatus;
     }): number {
       const info = db
         .prepare(
-          "INSERT INTO turns (session_id, prompt_text, created_at) VALUES (?, ?, ?)",
+          "INSERT INTO turns (session_id, prompt_text, created_at, status) VALUES (?, ?, ?, ?)",
         )
-        .run(input.session_id, input.prompt_text, input.created_at);
+        .run(input.session_id, input.prompt_text, input.created_at, input.status ?? "answered");
       return Number(info.lastInsertRowid);
     },
 
@@ -102,7 +109,7 @@ export function createRepository(db: Db) {
     getTurnDetail(turnId: number, userId: number): TurnDetail | null {
       const row = db
         .prepare(
-          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, t.audio_path,
+          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, t.audio_path, t.status AS status,
                   d.issues AS issues, l.content AS lesson, l.voiced_phrases AS voiced
            FROM turns t
            JOIN sessions s  ON t.session_id = s.id
@@ -118,6 +125,7 @@ export function createRepository(db: Db) {
         prompt_text: row.prompt_text,
         transcript: row.transcript,
         audio_path: row.audio_path,
+        status: row.status,
         issues: row.issues ? JSON.parse(row.issues) : [],
         lesson: row.lesson ? JSON.parse(row.lesson) : null,
         voicedPhrases: row.voiced ? JSON.parse(row.voiced) : [],
@@ -152,7 +160,7 @@ export function createRepository(db: Db) {
 
       const rows = db
         .prepare(
-          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, d.issues AS issues
+          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, t.status AS status, d.issues AS issues
            FROM turns t
            JOIN sessions s ON t.session_id = s.id
            LEFT JOIN diagnoses d ON d.turn_id = t.id
@@ -168,6 +176,7 @@ export function createRepository(db: Db) {
           created_at: r.created_at,
           prompt_text: r.prompt_text,
           transcript: r.transcript,
+          status: r.status,
           issueCount: issues.length,
           dimensions: [...new Set(issues.map((i) => i.dimension))],
         };
