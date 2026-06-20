@@ -124,6 +124,56 @@ export function createRepository(db: Db) {
       };
     },
 
+    listTurns(
+      userId: number,
+      opts: { search?: string; skill?: string } = {},
+    ): TurnSummary[] {
+      const where: string[] = ["s.user_id = ?"];
+      const args: unknown[] = [userId];
+
+      const search = opts.search?.trim();
+      if (search) {
+        const like = `%${search}%`;
+        where.push("(t.prompt_text LIKE ? OR t.transcript LIKE ?)");
+        args.push(like, like);
+      }
+
+      const skill = opts.skill?.trim();
+      if (skill) {
+        where.push(`EXISTS (
+          SELECT 1 FROM diagnoses d2, json_each(d2.issues) je
+          WHERE d2.turn_id = t.id
+            AND ( json_extract(je.value, '$.dimension') = ?
+                  OR EXISTS (SELECT 1 FROM json_each(json_extract(je.value, '$.tags')) tg
+                             WHERE tg.value = ?) )
+        )`);
+        args.push(skill, skill);
+      }
+
+      const rows = db
+        .prepare(
+          `SELECT t.id, t.created_at, t.prompt_text, t.transcript, d.issues AS issues
+           FROM turns t
+           JOIN sessions s ON t.session_id = s.id
+           LEFT JOIN diagnoses d ON d.turn_id = t.id
+           WHERE ${where.join(" AND ")}
+           ORDER BY t.id DESC`,
+        )
+        .all(...args) as any[];
+
+      return rows.map((r) => {
+        const issues: Issue[] = r.issues ? JSON.parse(r.issues) : [];
+        return {
+          id: r.id,
+          created_at: r.created_at,
+          prompt_text: r.prompt_text,
+          transcript: r.transcript,
+          issueCount: issues.length,
+          dimensions: [...new Set(issues.map((i) => i.dimension))],
+        };
+      });
+    },
+
     replaceSkillItems(userId: number, items: SkillItem[]): void {
       const tx = db.transaction(() => {
         db.prepare("DELETE FROM skill_items WHERE user_id = ?").run(userId);

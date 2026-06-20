@@ -65,3 +65,70 @@ describe("getTurnDetail", () => {
     expect(repo.getTurnDetail(99999, userId)).toBeNull();
   });
 });
+
+describe("listTurns", () => {
+  it("lists the user's turns newest-first with parsed issue summary", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "cara", passcode_hash: "h" });
+    const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
+    const t1 = repo.createTurn({ session_id: sid, prompt_text: "first", created_at: "2026-06-20T00:00:00.000Z" });
+    repo.updateTurn(t1, { transcript: "uno" });
+    repo.saveDiagnosis(t1, [issue({ dimension: "grammar", tags: ["past-tense"] })]);
+    const t2 = repo.createTurn({ session_id: sid, prompt_text: "second", created_at: "2026-06-20T00:01:00.000Z" });
+    repo.updateTurn(t2, { transcript: "dos" });
+    repo.saveDiagnosis(t2, [
+      issue({ dimension: "idiom", tags: ["slang"] }),
+      issue({ dimension: "grammar", tags: ["agreement"] }),
+    ]);
+
+    const out = repo.listTurns(user.id);
+    expect(out.map((t) => t.id)).toEqual([t2, t1]); // newest first
+    expect(out[0].issueCount).toBe(2);
+    expect(out[0].dimensions.sort()).toEqual(["grammar", "idiom"]);
+  });
+
+  it("includes turns that have no diagnosis (issueCount 0)", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "dan", passcode_hash: "h" });
+    const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
+    const t = repo.createTurn({ session_id: sid, prompt_text: "quiet", created_at: "2026-06-20T00:00:00.000Z" });
+    repo.updateTurn(t, { transcript: "" });
+    const out = repo.listTurns(user.id);
+    expect(out).toHaveLength(1);
+    expect(out[0].issueCount).toBe(0);
+    expect(out[0].dimensions).toEqual([]);
+  });
+
+  it("text search matches prompt or transcript", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "ed", passcode_hash: "h" });
+    const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
+    const a = repo.createTurn({ session_id: sid, prompt_text: "tell me about hiking", created_at: "2026-06-20T00:00:00.000Z" });
+    repo.updateTurn(a, { transcript: "fui a la montaña" });
+    const b = repo.createTurn({ session_id: sid, prompt_text: "tell me about food", created_at: "2026-06-20T00:01:00.000Z" });
+    repo.updateTurn(b, { transcript: "comí pasta" });
+    expect(repo.listTurns(user.id, { search: "hiking" }).map((t) => t.id)).toEqual([a]);
+    expect(repo.listTurns(user.id, { search: "pasta" }).map((t) => t.id)).toEqual([b]);
+  });
+
+  it("skill filter matches by dimension and by tag", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const user = repo.createUser({ display_name: "fay", passcode_hash: "h" });
+    const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
+    const a = repo.createTurn({ session_id: sid, prompt_text: "a", created_at: "2026-06-20T00:00:00.000Z" });
+    repo.saveDiagnosis(a, [issue({ dimension: "grammar", tags: ["past-tense"] })]);
+    const b = repo.createTurn({ session_id: sid, prompt_text: "b", created_at: "2026-06-20T00:01:00.000Z" });
+    repo.saveDiagnosis(b, [issue({ dimension: "idiom", tags: ["slang"] })]);
+    expect(repo.listTurns(user.id, { skill: "idiom" }).map((t) => t.id)).toEqual([b]);
+    expect(repo.listTurns(user.id, { skill: "past-tense" }).map((t) => t.id)).toEqual([a]);
+  });
+
+  it("never returns another user's turns", () => {
+    const repo = createRepository(openDb(":memory:"));
+    const a = seedTurn(repo, "alice");
+    seedTurn(repo, "bob");
+    const out = repo.listTurns(a.userId);
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe(a.turnId);
+  });
+});
