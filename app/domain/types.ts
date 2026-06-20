@@ -55,3 +55,23 @@ export interface Lesson {
   intro: string;
   points: LessonPoint[];
 }
+
+export interface TurnSummary {
+  id: number;
+  created_at: string;
+  prompt_text: string;
+  transcript: string | null;
+  issueCount: number;
+  dimensions: Dimension[];
+}
+
+export interface TurnDetail {
+  id: number;
+  created_at: string;
+  prompt_text: string;
+  transcript: string | null;
+  audio_path: string | null;
+  issues: Issue[];
+  lesson: Lesson | null;
+  voicedPhrases: VoicedPhrase[];
+}
