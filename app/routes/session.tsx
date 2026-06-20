@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
-import { createLogger } from "../lib/log.server";
+import { createLogger, type StageLogger } from "../lib/log.server";
+import { clearProgress, reportProgress } from "../lib/progress.server";
 import { getUserId } from "../lib/session.server";
 import { generatePrompt } from "../modules/prompt-generator";
 import { runTurn } from "../modules/run-turn";
@@ -43,8 +44,15 @@ export async function action({ request }: Route.ActionArgs) {
   const user = ctx.repo.getUser(userId);
   if (!user) return redirect("/");
 
-  const log = createLogger(`turn user=${userId}`);
   const form = await request.formData();
+  const token = String(form.get("progressToken") ?? "");
+  const base = createLogger(`turn user=${userId}`);
+  // Logger that also publishes each stage to the progress store for the client poller.
+  const log: StageLogger = (event, detail) => {
+    base(event, detail);
+    if (token) reportProgress(token, event);
+  };
+
   const promptText = String(form.get("prompt") ?? "");
   const blob = form.get("audio");
   if (!(blob instanceof File)) {
@@ -89,6 +97,8 @@ export async function action({ request }: Route.ActionArgs) {
       error:
         "Something went wrong while analyzing your answer. Please try recording again.",
     };
+  } finally {
+    if (token) clearProgress(token);
   }
 }
 
@@ -131,12 +141,21 @@ function Phrase({ text, src }: { text: string; src: string | null }) {
   );
 }
 
+interface Progress {
+  step: number;
+  total: number;
+  label: string | null;
+}
+
 export default function Session() {
   const { prompt, user, tracking } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [recording, setRecording] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const chunks = useRef<Blob[]>([]);
   const recorder = useRef<MediaRecorder | null>(null);
+  const tokenRef = useRef<string>("");
 
   const busy = fetcher.state !== "idle";
   const result =
@@ -146,6 +165,42 @@ export default function Session() {
   const lesson = result?.lesson ?? null;
   const voicedPhrases = result?.voicedPhrases ?? [];
   const transcript = result?.transcript ?? null;
+
+  // While a turn runs, poll the server for the real pipeline stage and tick an
+  // elapsed timer so the wait always shows movement, even on the long step.
+  useEffect(() => {
+    if (!busy) {
+      setProgress(null);
+      setElapsed(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const tick = setInterval(
+      () => setElapsed(Math.floor((Date.now() - startedAt) / 1000)),
+      1000,
+    );
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/session/progress?token=${encodeURIComponent(tokenRef.current)}`,
+        );
+        if (res.ok && active) {
+          const p = (await res.json()) as Progress;
+          if (p?.label) setProgress(p);
+        }
+      } catch {
+        /* keep the last known stage; the timer still moves */
+      }
+    };
+    poll();
+    const iv = setInterval(poll, 1200);
+    return () => {
+      active = false;
+      clearInterval(iv);
+      clearInterval(tick);
+    };
+  }, [busy]);
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -165,10 +220,15 @@ export default function Session() {
     });
     mr.stream.getTracks().forEach((t) => t.stop());
     setRecording(false);
+    const token = crypto.randomUUID();
+    tokenRef.current = token;
+    setProgress(null);
+    setElapsed(0);
     const blob = new Blob(chunks.current, { type: "audio/webm" });
     const fd = new FormData();
     fd.append("prompt", prompt);
     fd.append("audio", blob, "audio.webm");
+    fd.append("progressToken", token);
     fetcher.submit(fd, { method: "post", encType: "multipart/form-data" });
   }
 
@@ -203,13 +263,42 @@ export default function Session() {
           </svg>
         </button>
         <div className="pk-cap">
-          {busy ? "Thinking…" : recording ? "Listening… tap to finish" : "Tap & talk!"}
-        </div>
-        <div className="pk-cap-sub">
           {busy
-            ? "Transcribing & analyzing — this takes a few seconds."
-            : "Answer like you'd tell a friend — about three sentences."}
+            ? (progress?.label ?? "Getting started…")
+            : recording
+              ? "Listening… tap to finish"
+              : "Tap & talk!"}
+          {busy && (
+            <span className="pk-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          )}
         </div>
+
+        {busy ? (
+          <div className="pk-progress" role="status" aria-live="polite">
+            <div className="pk-progress-bar">
+              <span
+                style={{
+                  width: `${progress ? (progress.step / progress.total) * 100 : 5}%`,
+                }}
+              />
+            </div>
+            <div className="pk-progress-row">
+              <span className="pk-progress-step">
+                Step {progress?.step ?? 0} of {progress?.total ?? 4}
+              </span>
+              <span className="pk-progress-time">{elapsed}s</span>
+            </div>
+          </div>
+        ) : (
+          <div className="pk-cap-sub">
+            Answer like you'd tell a friend — about three sentences.
+          </div>
+        )}
+
         {error && <p className="pk-error" style={{ marginTop: 16 }}>{error}</p>}
       </div>
 
