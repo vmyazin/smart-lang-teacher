@@ -31,6 +31,10 @@ export default function HistoryTurn() {
         <h1 className="pk-h1">{detail.prompt_text}</h1>
       </div>
 
+      {detail.status === "skipped" && (
+        <p className="pk-skipped-note">You skipped this one — no answer recorded.</p>
+      )}
+
       {detail.transcript && (
         <div className="pk-heard">
           <div className="pk-heard-h">you said</div>

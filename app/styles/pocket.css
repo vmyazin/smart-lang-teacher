@@ -300,3 +300,5 @@ body {
 }
 .pk-del-yes { color: #fff; background: var(--berry); }
 .pk-del-no { color: var(--ink); background: #fff; }
+
+.pk-skipped-note { color: var(--ink-soft); background: #f1ece3; border: 2.5px dashed var(--ink-soft); border-radius: 16px; padding: 14px 16px; margin: 16px 0; font-weight: 700; }
