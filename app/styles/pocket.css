@@ -273,3 +273,7 @@ body {
 .pk-diag summary { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; cursor: pointer; }
 .pk-diag ul { margin: 10px 0 0; padding-left: 18px; }
 .pk-diag li { margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+
+/* "new question" (skip) control on the session page */
+.pk-newq { display: flex; justify-content: flex-end; margin: 10px 0 4px; }
+.pk-newq-btn { font-size: 14px; padding: 8px 16px; }

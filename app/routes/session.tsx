@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { redirect, useLoaderData, useFetcher } from "react-router";
+import { Form, redirect, useLoaderData, useFetcher } from "react-router";
 import Nav from "../components/Nav";
 import type { Route } from "./+types/session";
 import { getContext } from "../lib/app-context.server";
@@ -17,16 +17,22 @@ export async function loader({ request }: Route.LoaderArgs) {
   const user = repo.getUser(userId);
   if (!user || !user.target_lang) return redirect("/onboarding");
   const profile = repo.getSkillItems(userId);
-  const log = createLogger(`prompt user=${userId}`);
-  log("generate prompt: start", { target: user.target_lang, profileItems: profile.length });
-  const prompt = await generatePrompt({
-    interests: user.interests,
-    profile,
-    targetLang: user.target_lang,
-    now: new Date(),
-    chat,
-  });
-  log("generate prompt: done", { chars: prompt.length });
+
+  let prompt = user.current_prompt;
+  if (!prompt) {
+    const log = createLogger(`prompt user=${userId}`);
+    log("generate prompt: start", { target: user.target_lang, profileItems: profile.length });
+    prompt = await generatePrompt({
+      interests: user.interests,
+      profile,
+      targetLang: user.target_lang,
+      now: new Date(),
+      chat,
+    });
+    repo.setCurrentPrompt(userId, prompt);
+    log("generate prompt: done", { chars: prompt.length });
+  }
+
   const tracking = profile
     .filter((s) => s.status !== "mastered")
     .slice(0, 4)
@@ -42,21 +48,50 @@ export async function action({ request }: Route.ActionArgs) {
   if (!user) return redirect("/");
 
   const form = await request.formData();
+  const intent = String(form.get("intent") ?? "answer");
+
+  // "New question": record the current prompt as skipped, then regenerate.
+  if (intent === "skip") {
+    const log = createLogger(`skip user=${userId}`);
+    const current = user.current_prompt;
+    if (current) {
+      const now = new Date();
+      const sessionId = ctx.repo.createSession(userId, now.toISOString());
+      ctx.repo.createTurn({
+        session_id: sessionId,
+        prompt_text: current,
+        created_at: now.toISOString(),
+        status: "skipped",
+      });
+      log("skipped prompt recorded");
+    }
+    const fresh = await generatePrompt({
+      interests: user.interests,
+      profile: ctx.repo.getSkillItems(userId),
+      targetLang: user.target_lang ?? "en",
+      now: new Date(),
+      chat: ctx.chat,
+    });
+    ctx.repo.setCurrentPrompt(userId, fresh);
+    log("new prompt generated", { chars: fresh.length });
+    return redirect("/session");
+  }
+
+  // Answer flow.
   const token = String(form.get("progressToken") ?? "");
   const base = createLogger(`turn user=${userId}`);
-  // Logger that also publishes each stage to the progress store for the client poller.
   const log: StageLogger = (event, detail) => {
     base(event, detail);
     if (token) reportProgress(token, event);
   };
 
-  const promptText = String(form.get("prompt") ?? "");
   const blob = form.get("audio");
   if (!(blob instanceof File)) {
     log("rejected: no audio");
     return { error: "No audio received — please try recording again." };
   }
   const audio = Buffer.from(await blob.arrayBuffer());
+  const promptText = user.current_prompt ?? String(form.get("prompt") ?? "");
   log("turn: received", { audioBytes: audio.length, promptChars: promptText.length });
 
   const now = new Date();
@@ -87,6 +122,7 @@ export async function action({ request }: Route.ActionArgs) {
       transcriptChars: result.transcript.trim().length,
       points: result.lesson.points.length,
     });
+    ctx.repo.setCurrentPrompt(userId, null);
     return { result };
   } catch (err) {
     log("turn: ERROR", { message: String(err) });
@@ -236,6 +272,15 @@ export default function Session() {
       <div className="pk-card pk-card--tilt">
         <span className="pk-pin">Today's prompt</span>
         <h1 className="pk-h1">{prompt}</h1>
+      </div>
+
+      <div className="pk-newq">
+        <Form method="post">
+          <input type="hidden" name="intent" value="skip" />
+          <button type="submit" className="pk-btn pk-btn--ghost pk-newq-btn" disabled={busy}>
+            New question ↻
+          </button>
+        </Form>
       </div>
 
       <div className="pk-micwrap">
