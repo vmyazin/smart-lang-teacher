@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parla — choose a UI direction</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#11100e;--card:#1a1916;--line:#2c2a26;--txt:#efe9df;--dim:#9b948a;--accent:#e7b24b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"DM Mono",monospace;
+    background-image:radial-gradient(70% 50% at 50% -10%, rgba(231,178,75,.10), transparent 60%)}
+  header{max-width:1180px;margin:0 auto;padding:48px 28px 8px}
+  h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(30px,5vw,46px);margin:0 0 6px;letter-spacing:-.01em}
+  header p{color:var(--dim);margin:0;font-size:14px;max-width:60ch;line-height:1.7}
+  .grid{max-width:1180px;margin:0 auto;padding:34px 28px 80px;display:grid;gap:24px;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column;transition:transform .25s,border-color .25s}
+  .opt:hover{transform:translateY(-4px);border-color:var(--accent)}
+  .frame{position:relative;height:340px;overflow:hidden;border-bottom:1px solid var(--line);background:#000}
+  .frame iframe{position:absolute;top:0;left:0;width:1100px;height:1360px;border:0;
+    transform:scale(.42);transform-origin:top left;pointer-events:none}
+  .frame a.cover{position:absolute;inset:0;z-index:2}
+  .meta{padding:18px 18px 20px}
+  .tag{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent)}
+  .opt h2{font-family:"Fraunces",serif;font-weight:500;font-size:23px;margin:8px 0 6px}
+  .opt p{color:var(--dim);font-size:13px;line-height:1.65;margin:0 0 16px;min-height:54px}
+  .open{display:inline-block;text-decoration:none;color:var(--bg);background:var(--accent);
+    font-weight:500;font-size:13px;letter-spacing:.04em;padding:9px 16px;border-radius:9px}
+  .open:hover{filter:brightness(1.08)}
+  footer{max-width:1180px;margin:0 auto;padding:0 28px 60px;color:var(--dim);font-size:12.5px;line-height:1.8}
+  footer b{color:var(--txt)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Three directions for the tutor UI</h1>
+    <p>Same screen, three personalities — the prompt, the record control, and a gentle lesson with audio playback. Click any preview to open it full-size, try the mic + play buttons, then tell me which to wire into the real app (A, B, or C).</p>
+  </header>
+
+  <div class="grid">
+    <div class="opt">
+      <div class="frame"><a class="cover" href="a-field-notes.html" target="_blank" aria-label="Open A"></a>
+        <iframe src="a-field-notes.html" loading="lazy" title="A"></iframe></div>
+      <div class="meta">
+        <div class="tag">Option A</div>
+        <h2>Field Notes</h2>
+        <p>Editorial &amp; literary. Warm paper, serif display, numbered “tutor notes.” Calm, grown-up, focused — feels like a beautiful language journal.</p>
+        <a class="open" href="a-field-notes.html" target="_blank">Open A →</a>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="frame"><a class="cover" href="b-studio.html" target="_blank" aria-label="Open B"></a>
+        <iframe src="b-studio.html" loading="lazy" title="B"></iframe></div>
+      <div class="meta">
+        <div class="tag">Option B</div>
+        <h2>Studio</h2>
+        <p>Dark &amp; immersive voice-coach. A tactile mic orb with pulsing rings and a live waveform, acid-lime accents, mono labels. Sleek and modern.</p>
+        <a class="open" href="b-studio.html" target="_blank">Open B →</a>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="frame"><a class="cover" href="c-pocket.html" target="_blank" aria-label="Open C"></a>
+        <iframe src="c-pocket.html" loading="lazy" title="C"></iframe></div>
+      <div class="meta">
+        <div class="tag">Option C</div>
+        <h2>Pocket</h2>
+        <p>Playful &amp; tactile card deck. Chunky rounded type, hard shadows, bright tangerine/teal, a streak badge. Friendly and habit-forming.</p>
+        <a class="open" href="c-pocket.html" target="_blank">Open C →</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    These are <b>throwaway mockups</b> (static HTML, placeholder content) — not yet wired to the real app.
+    Once you pick a direction I'll translate it into the actual React Router routes (login · onboarding · session) using your real data and the live record→lesson pipeline.
+  </footer>
+</body>
+</html>
