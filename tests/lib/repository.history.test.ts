@@ -21,7 +21,7 @@ function seedTurn(
   name: string,
   opts: { prompt?: string; transcript?: string; issues?: Issue[] } = {},
 ) {
-  const user = repo.createUser({ display_name: name, passcode_hash: "h" });
+  const user = repo.createUser({ email: name + "@t.local", password_hash: "h" });
   const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
   const tid = repo.createTurn({
     session_id: sid,
@@ -69,7 +69,7 @@ describe("getTurnDetail", () => {
 describe("listTurns", () => {
   it("lists the user's turns newest-first with parsed issue summary", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "cara", passcode_hash: "h" });
+    const user = repo.createUser({ email: "cara@t.local", password_hash: "h" });
     const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
     const t1 = repo.createTurn({ session_id: sid, prompt_text: "first", created_at: "2026-06-20T00:00:00.000Z" });
     repo.updateTurn(t1, { transcript: "uno" });
@@ -89,7 +89,7 @@ describe("listTurns", () => {
 
   it("includes turns that have no diagnosis (issueCount 0)", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "dan", passcode_hash: "h" });
+    const user = repo.createUser({ email: "dan@t.local", password_hash: "h" });
     const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
     const t = repo.createTurn({ session_id: sid, prompt_text: "quiet", created_at: "2026-06-20T00:00:00.000Z" });
     repo.updateTurn(t, { transcript: "" });
@@ -101,7 +101,7 @@ describe("listTurns", () => {
 
   it("text search matches prompt or transcript", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "ed", passcode_hash: "h" });
+    const user = repo.createUser({ email: "ed@t.local", password_hash: "h" });
     const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
     const a = repo.createTurn({ session_id: sid, prompt_text: "tell me about hiking", created_at: "2026-06-20T00:00:00.000Z" });
     repo.updateTurn(a, { transcript: "fui a la montaña" });
@@ -113,7 +113,7 @@ describe("listTurns", () => {
 
   it("skill filter matches by dimension and by tag", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "fay", passcode_hash: "h" });
+    const user = repo.createUser({ email: "fay@t.local", password_hash: "h" });
     const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
     const a = repo.createTurn({ session_id: sid, prompt_text: "a", created_at: "2026-06-20T00:00:00.000Z" });
     repo.saveDiagnosis(a, [issue({ dimension: "grammar", tags: ["past-tense"] })]);
@@ -136,7 +136,7 @@ describe("listTurns", () => {
 describe("listSkillFacets", () => {
   it("returns sorted distinct dimensions + tags for the user only", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "gus", passcode_hash: "h" });
+    const user = repo.createUser({ email: "gus@t.local", password_hash: "h" });
     const sid = repo.createSession(user.id, "2026-06-20T00:00:00.000Z");
     const t = repo.createTurn({ session_id: sid, prompt_text: "p", created_at: "2026-06-20T00:00:00.000Z" });
     repo.saveDiagnosis(t, [
@@ -158,7 +158,7 @@ describe("listSkillFacets", () => {
 
   it("returns an empty list when the user has no diagnoses", () => {
     const repo = createRepository(openDb(":memory:"));
-    const user = repo.createUser({ display_name: "ivy", passcode_hash: "h" });
+    const user = repo.createUser({ email: "ivy@t.local", password_hash: "h" });
     expect(repo.listSkillFacets(user.id)).toEqual([]);
   });
 });
@@ -166,7 +166,7 @@ describe("listSkillFacets", () => {
 describe("current_prompt + status", () => {
   it("round-trips current_prompt (set, read, clear)", () => {
     const repo = createRepository(openDb(":memory:"));
-    const u = repo.createUser({ display_name: "pp", passcode_hash: "h" });
+    const u = repo.createUser({ email: "pp@t.local", password_hash: "h" });
     expect(repo.getUser(u.id)!.current_prompt).toBeNull();
     repo.setCurrentPrompt(u.id, "¿Como vai?");
     expect(repo.getUser(u.id)!.current_prompt).toBe("¿Como vai?");
@@ -176,7 +176,7 @@ describe("current_prompt + status", () => {
 
   it("createTurn stores status (default answered, explicit skipped)", () => {
     const repo = createRepository(openDb(":memory:"));
-    const u = repo.createUser({ display_name: "st", passcode_hash: "h" });
+    const u = repo.createUser({ email: "st@t.local", password_hash: "h" });
     const sid = repo.createSession(u.id, "2026-06-20T00:00:00.000Z");
     const answered = repo.createTurn({ session_id: sid, prompt_text: "a", created_at: "2026-06-20T00:00:00.000Z" });
     const skipped = repo.createTurn({ session_id: sid, prompt_text: "b", created_at: "2026-06-20T00:01:00.000Z", status: "skipped" });

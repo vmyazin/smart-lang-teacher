@@ -10,16 +10,16 @@ function repo() {
 describe("repository", () => {
   it("creates and finds a user", () => {
     const r = repo();
-    const u = r.createUser({ display_name: "alice", passcode_hash: "h" });
+    const u = r.createUser({ email: "alice@t.local", password_hash: "h" });
     expect(u.id).toBeGreaterThan(0);
-    const found = r.findUserByName("alice");
-    expect(found?.passcode_hash).toBe("h");
-    expect(r.findUserByName("nobody")).toBeNull();
+    const found = r.findUserByEmail("alice@t.local");
+    expect(found?.password_hash).toBe("h");
+    expect(r.findUserByEmail("nobody@t.local")).toBeNull();
   });
 
   it("updates a user profile and reads interests back as an array", () => {
     const r = repo();
-    const u = r.createUser({ display_name: "bob", passcode_hash: "h" });
+    const u = r.createUser({ email: "bob@t.local", password_hash: "h" });
     r.updateUserProfile(u.id, {
       native_lang: "en",
       target_lang: "es",
@@ -33,7 +33,7 @@ describe("repository", () => {
 
   it("round-trips skill items", () => {
     const r = repo();
-    const u = r.createUser({ display_name: "cara", passcode_hash: "h" });
+    const u = r.createUser({ email: "cara@t.local", password_hash: "h" });
     const item: SkillItem = {
       id: 0,
       user_id: u.id,
@@ -56,7 +56,7 @@ describe("repository", () => {
 
   it("persists a turn, diagnosis, and lesson", () => {
     const r = repo();
-    const u = r.createUser({ display_name: "dan", passcode_hash: "h" });
+    const u = r.createUser({ email: "dan@t.local", password_hash: "h" });
     const sid = r.createSession(u.id, "2026-06-19T00:00:00.000Z");
     const tid = r.createTurn({
       session_id: sid,

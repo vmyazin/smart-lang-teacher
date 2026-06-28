@@ -14,3 +14,9 @@ export function verifyPasscode(passcode: string, stored: string): boolean {
   const actual = scryptSync(passcode, salt, 64);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
+
+// Passwords use the same scrypt salt:hash scheme as passcodes — these aliases
+// keep the call sites readable now that auth is email + password. Legacy rows
+// migrated from passcodes verify unchanged.
+export const hashPassword = hashPasscode;
+export const verifyPassword = verifyPasscode;

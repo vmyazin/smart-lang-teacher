@@ -1,5 +1,6 @@
 import type { Db } from "./db";
 import type {
+  ApiProvider,
   Issue,
   Lesson,
   SkillItem,
@@ -10,10 +11,17 @@ import type {
   VoicedPhrase,
 } from "../domain/types";
 
+export interface Credential {
+  provider: ApiProvider;
+  secret_enc: string;
+  hint: string | null;
+}
+
 function rowToUser(row: any): User {
   return {
     id: row.id,
-    display_name: row.display_name,
+    email: row.email,
+    display_name: row.display_name ?? null,
     native_lang: row.native_lang,
     target_lang: row.target_lang,
     interests: JSON.parse(row.interests),
@@ -24,21 +32,25 @@ function rowToUser(row: any): User {
 
 export function createRepository(db: Db) {
   return {
-    createUser(input: { display_name: string; passcode_hash: string }): User {
+    createUser(input: {
+      email: string;
+      password_hash: string;
+      display_name?: string | null;
+    }): User {
       const info = db
         .prepare(
-          "INSERT INTO users (display_name, passcode_hash) VALUES (?, ?)",
+          "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
         )
-        .run(input.display_name, input.passcode_hash);
+        .run(input.email, input.password_hash, input.display_name ?? null);
       return this.getUser(Number(info.lastInsertRowid))!;
     },
 
-    findUserByName(name: string): (User & { passcode_hash: string }) | null {
+    findUserByEmail(email: string): (User & { password_hash: string }) | null {
       const row = db
-        .prepare("SELECT * FROM users WHERE display_name = ?")
-        .get(name) as any;
+        .prepare("SELECT * FROM users WHERE email = ?")
+        .get(email) as any;
       if (!row) return null;
-      return { ...rowToUser(row), passcode_hash: row.passcode_hash };
+      return { ...rowToUser(row), password_hash: row.password_hash };
     },
 
     getUser(id: number): User | null {
@@ -57,6 +69,67 @@ export function createRepository(db: Db) {
 
     setCurrentPrompt(userId: number, prompt: string | null): void {
       db.prepare("UPDATE users SET current_prompt = ? WHERE id = ?").run(prompt, userId);
+    },
+
+    getCredential(userId: number, provider: ApiProvider): Credential | null {
+      const row = db
+        .prepare(
+          "SELECT provider, secret_enc, hint FROM api_credentials WHERE user_id = ? AND provider = ?",
+        )
+        .get(userId, provider) as Credential | undefined;
+      return row ?? null;
+    },
+
+    listCredentialHints(userId: number): { provider: ApiProvider; hint: string | null }[] {
+      return db
+        .prepare("SELECT provider, hint FROM api_credentials WHERE user_id = ?")
+        .all(userId) as { provider: ApiProvider; hint: string | null }[];
+    },
+
+    upsertCredential(
+      userId: number,
+      provider: ApiProvider,
+      secretEnc: string,
+      hint: string,
+      now: string,
+    ): void {
+      db.prepare(
+        `INSERT INTO api_credentials (user_id, provider, secret_enc, hint, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(user_id, provider) DO UPDATE SET
+           secret_enc = excluded.secret_enc,
+           hint = excluded.hint,
+           updated_at = excluded.updated_at`,
+      ).run(userId, provider, secretEnc, hint, now, now);
+    },
+
+    deleteCredential(userId: number, provider: ApiProvider): void {
+      db.prepare(
+        "DELETE FROM api_credentials WHERE user_id = ? AND provider = ?",
+      ).run(userId, provider);
+    },
+
+    /** True if `basename` is an audio file referenced by a turn or lesson owned by the user. */
+    ownsAudio(userId: number, basename: string): boolean {
+      const like = `%${basename}`;
+      const row = db
+        .prepare(
+          `SELECT 1
+           FROM turns t
+           JOIN sessions s ON t.session_id = s.id
+           LEFT JOIN lessons l ON l.turn_id = t.id
+           WHERE s.user_id = ?
+             AND (
+               t.audio_path LIKE ?
+               OR EXISTS (
+                 SELECT 1 FROM json_each(l.voiced_phrases) vp
+                 WHERE json_extract(vp.value, '$.audio_path') LIKE ?
+               )
+             )
+           LIMIT 1`,
+        )
+        .get(userId, like, like) as unknown;
+      return row != null;
     },
 
     createSession(userId: number, startedAt: string): number {

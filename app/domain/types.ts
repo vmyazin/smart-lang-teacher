@@ -34,13 +34,16 @@ export interface SkillItem {
 
 export interface User {
   id: number;
-  display_name: string;
+  email: string;
+  display_name: string | null;
   native_lang: string | null;
   target_lang: string | null;
   interests: string[];
   level: string | null;
   current_prompt: string | null;
 }
+
+export type ApiProvider = "anthropic" | "openai";
 
 export interface VoicedPhrase {
   text: string;

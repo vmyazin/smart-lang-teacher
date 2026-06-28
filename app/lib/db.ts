@@ -7,13 +7,24 @@ export type Db = Database.Database;
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  display_name TEXT NOT NULL UNIQUE,
-  passcode_hash TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT,
   native_lang TEXT,
   target_lang TEXT,
   interests TEXT NOT NULL DEFAULT '[]',
   level TEXT,
   current_prompt TEXT
+);
+CREATE TABLE IF NOT EXISTS api_credentials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  provider TEXT NOT NULL,
+  secret_enc TEXT NOT NULL,
+  hint TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id, provider)
 );
 CREATE TABLE IF NOT EXISTS sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,6 +73,54 @@ function ensureColumn(db: Db, table: string, column: string, ddl: string): void 
   }
 }
 
+function tableColumns(db: Db, table: string): string[] {
+  return (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+    (c) => c.name,
+  );
+}
+
+/**
+ * Migrate the pre-auth `users` table (display_name + passcode_hash) to the
+ * email/password shape. Rebuilds the table inside a transaction, preserving
+ * `id` so foreign keys in sessions/skill_items stay valid. Legacy rows get a
+ * placeholder `<name>@legacy.local` email and keep their passcode as the
+ * password (identical scrypt salt:hash format), so they can still log in.
+ */
+function migrateUsers(db: Db): void {
+  const cols = tableColumns(db, "users");
+  if (cols.includes("email") || !cols.includes("passcode_hash")) return;
+
+  const tx = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE users_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        display_name TEXT,
+        native_lang TEXT,
+        target_lang TEXT,
+        interests TEXT NOT NULL DEFAULT '[]',
+        level TEXT,
+        current_prompt TEXT
+      );
+    `);
+    db.exec(`
+      INSERT INTO users_new
+        (id, email, password_hash, display_name, native_lang, target_lang, interests, level, current_prompt)
+      SELECT
+        id,
+        lower(display_name) || '@legacy.local',
+        passcode_hash,
+        display_name,
+        native_lang, target_lang, interests, level, current_prompt
+      FROM users;
+    `);
+    db.exec(`DROP TABLE users;`);
+    db.exec(`ALTER TABLE users_new RENAME TO users;`);
+  });
+  tx();
+}
+
 export function openDb(path: string): Db {
   // better-sqlite3 won't create missing parent directories; do it ourselves
   // (skip for the in-memory database used in tests).
@@ -71,6 +130,7 @@ export function openDb(path: string): Db {
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
+  migrateUsers(db);
   ensureColumn(db, "users", "current_prompt", "current_prompt TEXT");
   ensureColumn(db, "turns", "status", "status TEXT NOT NULL DEFAULT 'answered'");
   return db;

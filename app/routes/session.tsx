@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Form, redirect, useLoaderData, useFetcher } from "react-router";
 import Nav from "../components/Nav";
 import type { Route } from "./+types/session";
-import { getContext } from "../lib/app-context.server";
+import { getContext, getUserProviders, MissingApiKeyError } from "../lib/app-context.server";
 import { unlinkAudioFiles } from "../lib/audio-files.server";
 import { createLogger, type StageLogger } from "../lib/log.server";
 import { clearProgress, reportProgress } from "../lib/progress.server";
@@ -14,13 +14,20 @@ import { runTurn } from "../modules/run-turn";
 export async function loader({ request }: Route.LoaderArgs) {
   const userId = await getUserId(request);
   if (!userId) return redirect("/");
-  const { repo, chat } = getContext();
+  const { repo } = getContext();
   const user = repo.getUser(userId);
   if (!user || !user.target_lang) return redirect("/onboarding");
   const profile = repo.getSkillItems(userId);
 
   let prompt = user.current_prompt;
   if (!prompt) {
+    let chat;
+    try {
+      ({ chat } = getUserProviders(userId));
+    } catch (err) {
+      if (err instanceof MissingApiKeyError) return redirect("/settings/keys");
+      throw err;
+    }
     const log = createLogger(`prompt user=${userId}`);
     log("generate prompt: start", { target: user.target_lang, profileItems: profile.length });
     prompt = await generatePrompt({
@@ -51,6 +58,18 @@ export async function action({ request }: Route.ActionArgs) {
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "answer");
 
+  let providers;
+  try {
+    providers = getUserProviders(userId);
+  } catch (err) {
+    if (err instanceof MissingApiKeyError) {
+      if (intent === "skip") return redirect("/settings/keys");
+      return { error: "Add your API keys in Settings → API keys to start practicing." };
+    }
+    throw err;
+  }
+  const { chat, stt, tts } = providers;
+
   // "New question": record the current prompt as skipped, then regenerate.
   if (intent === "skip") {
     const log = createLogger(`skip user=${userId}`);
@@ -71,7 +90,7 @@ export async function action({ request }: Route.ActionArgs) {
       profile: ctx.repo.getSkillItems(userId),
       targetLang: user.target_lang ?? "en",
       now: new Date(),
-      chat: ctx.chat,
+      chat,
     });
     ctx.repo.setCurrentPrompt(userId, fresh);
     log("new prompt generated", { chars: fresh.length });
@@ -112,9 +131,9 @@ export async function action({ request }: Route.ActionArgs) {
       turnId,
       promptText,
       audio,
-      chat: ctx.chat,
-      stt: ctx.stt,
-      tts: ctx.tts,
+      chat,
+      stt,
+      tts,
       log,
       now,
       saveAudio: ctx.saveAudio,
