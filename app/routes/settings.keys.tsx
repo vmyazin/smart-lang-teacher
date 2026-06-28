@@ -1,4 +1,4 @@
-import { Form, redirect, useLoaderData } from "react-router";
+import { Form, redirect, useActionData, useLoaderData } from "react-router";
 import type { Route } from "./+types/settings.keys";
 import Nav from "../components/Nav";
 import { getUserId } from "../lib/session.server";
@@ -41,13 +41,14 @@ export async function action({ request }: Route.ActionArgs) {
     return redirect("/settings/keys");
   }
   const key = String(form.get("key") ?? "").trim();
-  if (!key) return { error: "Please paste a key before saving." };
+  if (!key) return { error: "Please paste a key before saving.", provider };
   setApiKey(userId, provider, key);
   return redirect("/settings/keys");
 }
 
 export default function ApiKeys() {
   const { status } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   return (
     <main className="pk-wrap">
       <Nav />
@@ -66,12 +67,13 @@ export default function ApiKeys() {
             <div className="pk-form" key={provider} style={{ marginTop: "1.5rem" }}>
               <h3 className="pk-skill-group-h">{LABELS[provider]}</h3>
               <p className="pk-sub">{HELP[provider]}</p>
-              {hint ? (
+              {hint && (
                 <p className="pk-sub">
                   Saved key ending in <code>{hint}</code>.
                 </p>
-              ) : (
-                <p className="pk-error">Not set — required to practice.</p>
+              )}
+              {actionData?.error && actionData.provider === provider && (
+                <p className="pk-error">{actionData.error}</p>
               )}
               <Form method="post" className="pk-form">
                 <input type="hidden" name="provider" value={provider} />
