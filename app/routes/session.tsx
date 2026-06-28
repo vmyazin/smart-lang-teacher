@@ -37,6 +37,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       targetLang: user.target_lang,
       now: new Date(),
       chat,
+      recentPrompts: repo.recentPrompts(userId, 5),
     });
     repo.setCurrentPrompt(userId, prompt);
     log("generate prompt: done", { chars: prompt.length });
@@ -92,6 +93,7 @@ export async function action({ request }: Route.ActionArgs) {
       targetLang: user.target_lang ?? "en",
       now: new Date(),
       chat,
+      recentPrompts: ctx.repo.recentPrompts(userId, 5),
     });
     ctx.repo.setCurrentPrompt(userId, fresh);
     log("new prompt generated", { chars: fresh.length });

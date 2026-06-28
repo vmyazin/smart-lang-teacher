@@ -54,6 +54,17 @@ describe("repository", () => {
     expect(got[0].occurrences).toBe(2);
   });
 
+  it("returns recent prompts newest-first, capped at the limit", () => {
+    const r = repo();
+    const u = r.createUser({ email: "rp@t.local", password_hash: "h" });
+    const sid = r.createSession(u.id, "2026-06-19T00:00:00.000Z");
+    for (const p of ["q1", "q2", "q3"]) {
+      r.createTurn({ session_id: sid, prompt_text: p, created_at: "2026-06-19T00:00:00.000Z" });
+    }
+    expect(r.recentPrompts(u.id, 2)).toEqual(["q3", "q2"]);
+    expect(r.recentPrompts(u.id, 10)).toEqual(["q3", "q2", "q1"]);
+  });
+
   it("persists a turn, diagnosis, and lesson", () => {
     const r = repo();
     const u = r.createUser({ email: "dan@t.local", password_hash: "h" });

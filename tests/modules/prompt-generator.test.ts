@@ -52,4 +52,20 @@ describe("generatePrompt", () => {
     expect(out).toBe("Tell me about a hobby.");
     expect(chat.generate).toHaveBeenCalledOnce();
   });
+
+  it("passes recent prompts to the model so it can avoid repeating", async () => {
+    const generate = vi.fn().mockResolvedValue("A fresh question.");
+    const chat: ChatModel = { parse: vi.fn(), generate };
+    await generatePrompt({
+      interests: ["cooking", "jiu-jitsu"],
+      profile: [],
+      targetLang: "pt",
+      now,
+      chat,
+      recentPrompts: ["What did you cook today?", "How was training?"],
+    });
+    const { user } = generate.mock.calls[0][0];
+    expect(user).toContain("What did you cook today?");
+    expect(user).toContain("How was training?");
+  });
 });

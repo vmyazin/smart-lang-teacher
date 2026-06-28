@@ -3,14 +3,28 @@ import type { SkillItem } from "../domain/types";
 
 const SYSTEM = `You generate ONE short, friendly conversation prompt for a language learner.
 
-Keep it SHORT — at most two brief sentences, and aim for around 20-30 words total.
-Prefer one compact question plus a tiny follow-up invitation. Be concise and natural:
-- NO long wind-ups or em-dash elaborations (don't tack on "— como surgiu a ideia e no que você está trabalhando").
+LENGTH: at most two brief sentences, around 20-30 words. One compact question plus a tiny follow-up invitation.
+- NO long wind-ups or em-dash elaborations.
 - Don't stack multiple sub-questions; ask one main thing.
-- It should still invite a few spoken sentences about the learner's life or interests.
+- It should invite a few spoken sentences about the learner's life or interests.
 
-Example of the right length and shape (target language Portuguese):
-"Você está aprendendo a programar algo novo ou trabalhando em algum projeto pessoal que te anima? Me conta como surgiu a ideia!"
+BE CREATIVE — this is the priority. Generic openers like "Tell me about your hobby" or
+"Do you like cooking?" are boring and forgettable. Instead, pick a SPECIFIC, vivid angle, and
+rotate which angle you use each time so prompts never feel like a template with the noun swapped:
+- a concrete scenario or a memorable moment ("the last time…", "a time when…")
+- a strong opinion or a friendly debate ("what's overrated/underrated about…")
+- a hypothetical ("if you could… / what would you do if…")
+- a small recent win, struggle, or surprise
+- an unexpected detail, ritual, or trade-off within the interest
+- occasionally connect TWO of the learner's interests in a surprising way
+
+Avoid repeating or closely paraphrasing any recent prompts you're given — choose a different
+interest or a clearly different angle from them.
+
+Examples (target language Portuguese), note the varied angles:
+"No jiu-jitsu, qual foi a finalização que mais te deu trabalho pra aprender? Conta como foi sacar ela."
+"Se você só pudesse cozinhar um prato pelo resto do mês, qual seria? Me convence de que vale a pena."
+"Qual bug recente te tirou o sono e como você descobriu a solução? Quero os detalhes."
 
 Return ONLY the prompt text, no preamble, no quotes.`;
 
@@ -34,13 +48,20 @@ export async function generatePrompt(input: {
   targetLang: string;
   now: Date;
   chat: ChatModel;
+  recentPrompts?: string[];
 }): Promise<string> {
   const due = dueItems(input.profile, input.now);
+  const recent = (input.recentPrompts ?? []).filter((p) => p && p.trim());
+  const recentBlock = recent.length
+    ? recent.map((p, i) => `${i + 1}. ${p}`).join("\n")
+    : "(none yet)";
   const user = `Target language: ${input.targetLang}
 Learner interests: ${input.interests.join(", ") || "(unknown)"}
 Weak areas to softly elicit (do NOT mention these to the learner): ${
     due.map((d) => `${d.category}/${d.label}`).join(", ") || "(none)"
-  }`;
+  }
+Recent prompts already asked (do NOT repeat or echo these — pick a fresh topic or angle):
+${recentBlock}`;
 
   const text = await input.chat.generate({ system: SYSTEM, user });
   return text.trim();

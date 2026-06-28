@@ -71,6 +71,20 @@ export function createRepository(db: Db) {
       db.prepare("UPDATE users SET current_prompt = ? WHERE id = ?").run(prompt, userId);
     },
 
+    /** The user's most recently shown prompts (answered or skipped), newest first. */
+    recentPrompts(userId: number, limit: number): string[] {
+      const rows = db
+        .prepare(
+          `SELECT t.prompt_text
+           FROM turns t JOIN sessions s ON t.session_id = s.id
+           WHERE s.user_id = ?
+           ORDER BY t.id DESC
+           LIMIT ?`,
+        )
+        .all(userId, limit) as { prompt_text: string }[];
+      return rows.map((r) => r.prompt_text);
+    },
+
     getCredential(userId: number, provider: ApiProvider): Credential | null {
       const row = db
         .prepare(
