@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { dueItems, generatePrompt } from "../../app/modules/prompt-generator";
+import { dueItems, generatePrompt, levelGuidance } from "../../app/modules/prompt-generator";
 import type { ChatModel } from "../../app/lib/providers/types";
 import type { SkillItem } from "../../app/domain/types";
 
@@ -67,5 +67,21 @@ describe("generatePrompt", () => {
     const { user } = generate.mock.calls[0][0];
     expect(user).toContain("What did you cook today?");
     expect(user).toContain("How was training?");
+  });
+
+  it("includes level-appropriate vocabulary guidance", async () => {
+    const generate = vi.fn().mockResolvedValue("ok");
+    const chat: ChatModel = { parse: vi.fn(), generate };
+    await generatePrompt({ interests: [], profile: [], targetLang: "pt", level: "beginner", now, chat });
+    expect(generate.mock.calls[0][0].user).toContain("Beginner");
+  });
+});
+
+describe("levelGuidance", () => {
+  it("maps each level, defaulting unknown to intermediate", () => {
+    expect(levelGuidance("beginner")).toMatch(/Beginner/);
+    expect(levelGuidance("ADVANCED")).toMatch(/no vocabulary limits/);
+    expect(levelGuidance(null)).toMatch(/Intermediate/);
+    expect(levelGuidance("wat")).toMatch(/Intermediate/);
   });
 });

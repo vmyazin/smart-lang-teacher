@@ -28,6 +28,19 @@ Examples (target language Portuguese), note the varied angles:
 
 Return ONLY the prompt text, no preamble, no quotes.`;
 
+/** How freely to pitch vocabulary and structure for the learner's chosen level. */
+export function levelGuidance(level?: string | null): string {
+  switch ((level ?? "").trim().toLowerCase()) {
+    case "beginner":
+      return "Beginner: use only simple, common words and short, basic sentence structures. Avoid idioms, slang, and complex tenses.";
+    case "advanced":
+      return "Advanced: no vocabulary limits — use rich, natural, idiomatic language; nuanced or sophisticated phrasing is welcome.";
+    case "intermediate":
+    default:
+      return "Intermediate: use everyday vocabulary with some variety (a few less-common words and natural phrasing are fine); keep structures moderate.";
+  }
+}
+
 export function dueItems(items: SkillItem[], now: Date): SkillItem[] {
   return items
     .filter(
@@ -46,6 +59,7 @@ export async function generatePrompt(input: {
   interests: string[];
   profile: SkillItem[];
   targetLang: string;
+  level?: string | null;
   now: Date;
   chat: ChatModel;
   recentPrompts?: string[];
@@ -57,6 +71,8 @@ export async function generatePrompt(input: {
     : "(none yet)";
   const user = `Target language: ${input.targetLang}
 Learner interests: ${input.interests.join(", ") || "(unknown)"}
+Vocabulary level — match the prompt's words and grammar to this:
+${levelGuidance(input.level)}
 Weak areas to softly elicit (do NOT mention these to the learner): ${
     due.map((d) => `${d.category}/${d.label}`).join(", ") || "(none)"
   }
