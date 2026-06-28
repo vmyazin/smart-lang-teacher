@@ -204,12 +204,20 @@ interface Progress {
   label: string | null;
 }
 
+// Cap each answer so recordings stay short (and well under upload limits). The
+// last COUNTDOWN_FROM seconds show a wrap-up countdown before we auto-submit.
+const MAX_RECORDING_SEC = 60;
+const COUNTDOWN_FROM = 10;
+const fmtClock = (s: number) =>
+  `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
 export default function Session() {
   const { prompt, user, tracking } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [recordSec, setRecordSec] = useState(0);
   const chunks = useRef<Blob[]>([]);
   const recorder = useRef<MediaRecorder | null>(null);
   const tokenRef = useRef<string>("");
@@ -305,6 +313,30 @@ export default function Session() {
     if (lastBlobRef.current) submitRecording(lastBlobRef.current);
   }
 
+  // While recording, tick a timer and auto-stop (which submits) once the max
+  // duration is reached, so an answer can't run on forever or get too large.
+  useEffect(() => {
+    if (!recording) {
+      setRecordSec(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const iv = setInterval(() => {
+      const s = Math.round((Date.now() - startedAt) / 1000);
+      setRecordSec(s);
+      if (s >= MAX_RECORDING_SEC) {
+        clearInterval(iv);
+        void stop();
+      }
+    }, 500);
+    return () => clearInterval(iv);
+    // `stop` only reads refs/stable values, so the capture from this render is safe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recording]);
+
+  const remaining = Math.max(0, MAX_RECORDING_SEC - recordSec);
+  const wrappingUp = recording && remaining <= COUNTDOWN_FROM;
+
   return (
     <main className="pk-wrap">
       <Nav right={<span className="pk-pill">{(user.target_lang ?? "es").toUpperCase()}{user.level ? ` · ${user.level}` : ""}</span>} />
@@ -339,7 +371,7 @@ export default function Session() {
           {busy
             ? (progress?.label ?? "Getting started…")
             : recording
-              ? "Listening… tap to finish"
+              ? (wrappingUp ? `Wrap up — ${remaining}s left` : "Listening… tap to finish")
               : "Tap & talk!"}
           {busy && (
             <span className="pk-dots" aria-hidden="true">
@@ -365,6 +397,16 @@ export default function Session() {
               </span>
               <span className="pk-progress-time">{elapsed}s</span>
             </div>
+          </div>
+        ) : recording ? (
+          <div
+            className={"pk-cap-sub pk-rectimer" + (wrappingUp ? " pk-rectimer--warn" : "")}
+            role="status"
+            aria-live={wrappingUp ? "assertive" : "off"}
+          >
+            {wrappingUp
+              ? `⏱ ${remaining}s — finishing automatically`
+              : `${fmtClock(recordSec)} / ${fmtClock(MAX_RECORDING_SEC)}`}
           </div>
         ) : (
           <div className="pk-cap-sub">
