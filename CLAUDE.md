@@ -55,8 +55,15 @@ pm2 restart smart-lang-teacher --update-env
 
 ## Environment variables
 
-- `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — required for the core loop
-- `SESSION_SECRET` — sign session cookies; set to a long random string
+- Provider API keys are stored **per user, encrypted** in the DB (entered on the
+  in-app "API keys" page) — `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are no longer
+  read at runtime.
+- `APP_ENCRYPTION_KEY` — AES-256-GCM key encrypting users' stored API keys
+  (`openssl rand -base64 32`). Falls back to a key derived from `SESSION_SECRET`
+  if unset (dev/test only). **Back it up with `data/`** — losing it makes stored
+  keys unrecoverable.
+- `SESSION_SECRET` — signs session cookies; required in production (server
+  refuses to start without it)
 - `PORT` (default `3000`), `HOST` (default `0.0.0.0`)
 - `DB_PATH` (default `data/app.db`), `AUDIO_DIR` (default `data/audio`)
 

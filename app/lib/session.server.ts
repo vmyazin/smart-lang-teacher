@@ -1,12 +1,21 @@
 import { createCookieSessionStorage, redirect } from "react-router";
 
+function sessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+  return "dev-secret-change-me";
+}
+
 const storage = createCookieSessionStorage({
   cookie: {
     name: "slt_session",
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secrets: [process.env.SESSION_SECRET ?? "dev-secret-change-me"],
+    secrets: [sessionSecret()],
   },
 });
 

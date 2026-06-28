@@ -8,7 +8,7 @@ const now = new Date("2026-06-19T00:00:00.000Z");
 
 function setup() {
   const repo = createRepository(openDb(":memory:"));
-  const user = repo.createUser({ display_name: "t", passcode_hash: "h" });
+  const user = repo.createUser({ email: "t@t.local", password_hash: "h" });
   repo.updateUserProfile(user.id, {
     native_lang: "es",
     target_lang: "en",
