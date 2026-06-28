@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Form, redirect, useLoaderData, useFetcher } from "react-router";
 import Nav from "../components/Nav";
+import HighlightedText from "../components/HighlightedText";
 import type { Route } from "./+types/session";
 import { getContext, getUserProviders, MissingApiKeyError } from "../lib/app-context.server";
 import { unlinkAudioFiles } from "../lib/audio-files.server";
@@ -232,6 +233,7 @@ export default function Session() {
   const lesson = result?.lesson ?? null;
   const voicedPhrases = result?.voicedPhrases ?? [];
   const transcript = result?.transcript ?? null;
+  const issues = result?.issues ?? [];
 
   // While a turn runs, poll the server for the real pipeline stage and tick an
   // elapsed timer so the wait always shows movement, even on the long step.
@@ -438,7 +440,10 @@ export default function Session() {
       {transcript && (
         <div className="pk-heard">
           <div className="pk-heard-h">you said</div>
-          {transcript}
+          <HighlightedText text={transcript} snippets={issues.map((i) => i.snippet)} />
+          {issues.length > 0 && (
+            <div className="pk-heard-key">Highlighted = could be improved</div>
+          )}
         </div>
       )}
 

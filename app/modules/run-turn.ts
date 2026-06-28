@@ -1,7 +1,7 @@
 import type { Repository } from "../lib/repository";
 import type { ChatModel, SpeechToText, TextToSpeech } from "../lib/providers/types";
 import type { StageLogger } from "../lib/log.server";
-import type { Lesson, User, VoicedPhrase } from "../domain/types";
+import type { Issue, Lesson, User, VoicedPhrase } from "../domain/types";
 import { diagnose } from "./diagnostician";
 import { updateProfile } from "./profile-updater";
 import { composeLesson } from "./lesson-composer";
@@ -21,7 +21,12 @@ export async function runTurn(input: {
   now: Date;
   saveAudio: (bytes: Buffer) => Promise<string>;
   log?: StageLogger;
-}): Promise<{ transcript: string; lesson: Lesson; voicedPhrases: VoicedPhrase[] }> {
+}): Promise<{
+  transcript: string;
+  lesson: Lesson;
+  voicedPhrases: VoicedPhrase[];
+  issues: Issue[];
+}> {
   const { repo, user, turnId } = input;
   const log = input.log ?? noopLog;
   const targetLang = user.target_lang ?? "en";
@@ -44,7 +49,7 @@ export async function runTurn(input: {
       points: [],
     };
     repo.saveLesson(turnId, lesson, []);
-    return { transcript, lesson, voicedPhrases: [] };
+    return { transcript, lesson, voicedPhrases: [], issues: [] };
   }
 
   const profile = repo.getSkillItems(user.id);
@@ -89,5 +94,5 @@ export async function runTurn(input: {
   }
 
   repo.saveLesson(turnId, lesson, voicedPhrases);
-  return { transcript, lesson, voicedPhrases };
+  return { transcript, lesson, voicedPhrases, issues };
 }

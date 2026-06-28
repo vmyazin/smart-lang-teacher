@@ -1,6 +1,7 @@
 import { Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/history.turn";
 import Nav from "../components/Nav";
+import HighlightedText from "../components/HighlightedText";
 import { getContext } from "../lib/app-context.server";
 import { getUserId } from "../lib/session.server";
 import { fileBasename } from "../lib/paths";
@@ -38,7 +39,13 @@ export default function HistoryTurn() {
       {detail.transcript && (
         <div className="pk-heard">
           <div className="pk-heard-h">you said</div>
-          {detail.transcript}
+          <HighlightedText
+            text={detail.transcript}
+            snippets={detail.issues.map((iss: Issue) => iss.snippet)}
+          />
+          {detail.issues.length > 0 && (
+            <div className="pk-heard-key">Highlighted = could be improved</div>
+          )}
           {yourAudio && <audio className="pk-audio" controls src={yourAudio} />}
         </div>
       )}
