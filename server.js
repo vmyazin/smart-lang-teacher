@@ -6,6 +6,9 @@ import morgan from "morgan";
 const BUILD_PATH = "./build/server/index.js";
 const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
+// Bind to all interfaces by default (unchanged local behavior); on the VPS pass
+// HOST=127.0.0.1 to keep the app private behind nginx / a tunnel / Tailscale.
+const HOST = process.env.HOST || "0.0.0.0";
 
 const app = express();
 
@@ -42,6 +45,6 @@ if (DEVELOPMENT) {
   app.use(await import(BUILD_PATH).then((mod) => mod.app));
 }
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
 });
