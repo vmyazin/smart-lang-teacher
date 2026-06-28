@@ -14,7 +14,6 @@ export default function Nav({ right }: { right?: React.ReactNode } = {}) {
         <NavLink to="/session" className={linkClass}>Practice</NavLink>
         <NavLink to="/history" className={linkClass}>History</NavLink>
         <NavLink to="/profile" className={linkClass}>Profile</NavLink>
-        <NavLink to="/settings/keys" className={linkClass}>API keys</NavLink>
       </div>
       {right}
     </nav>

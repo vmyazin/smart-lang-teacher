@@ -1,4 +1,4 @@
-import { Form, redirect, useLoaderData } from "react-router";
+import { Form, Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/profile";
 import Nav from "../components/Nav";
 import { getContext } from "../lib/app-context.server";
@@ -83,6 +83,7 @@ export default function Profile() {
           </div>
           <button type="submit" className="pk-btn pk-btn--teal">Save changes</button>
         </Form>
+        <Link to="/settings/keys" className="pk-settings-link">🔑 Manage API keys →</Link>
       </div>
 
       <h2 className="pk-section-h">Skill progress</h2>
