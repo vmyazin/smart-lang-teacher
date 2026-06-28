@@ -213,6 +213,15 @@ interface Progress {
 // last COUNTDOWN_FROM seconds show a wrap-up countdown before we auto-submit.
 const MAX_RECORDING_SEC = 60;
 const COUNTDOWN_FROM = 10;
+const NEW_QUESTION_SOUND_KEY = "parla:play-new-question-sound";
+const UI_SOUNDS = {
+  tap: "/sfx/ui-tap.mp3",
+  recordStart: "/sfx/ui-record-start.mp3",
+  recordStop: "/sfx/ui-record-stop.mp3",
+  newQuestion: "/sfx/ui-new-question.mp3",
+} as const;
+type UiSound = keyof typeof UI_SOUNDS;
+
 const fmtClock = (s: number) =>
   `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
@@ -227,6 +236,7 @@ export default function Session() {
   const recorder = useRef<MediaRecorder | null>(null);
   const tokenRef = useRef<string>("");
   const lastBlobRef = useRef<Blob | null>(null);
+  const soundsRef = useRef<Partial<Record<UiSound, HTMLAudioElement>>>({});
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
 
   const busy = fetcher.state !== "idle";
@@ -238,6 +248,30 @@ export default function Session() {
   const voicedPhrases = result?.voicedPhrases ?? [];
   const transcript = result?.transcript ?? null;
   const issues = result?.issues ?? [];
+
+  function playSound(sound: UiSound) {
+    if (typeof Audio === "undefined") return;
+    let audio = soundsRef.current[sound];
+    if (!audio) {
+      audio = new Audio(UI_SOUNDS[sound]);
+      audio.preload = "auto";
+      audio.volume = 0.55;
+      soundsRef.current[sound] = audio;
+    }
+    audio.currentTime = 0;
+    void audio.play().catch(() => {
+      /* Browsers can block non-gesture playback; the UI action still proceeds. */
+    });
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.sessionStorage.getItem(NEW_QUESTION_SOUND_KEY) !== "1") return;
+    window.sessionStorage.removeItem(NEW_QUESTION_SOUND_KEY);
+    playSound("newQuestion");
+    // Only check after the rendered prompt changes; the sound marks a completed skip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt]);
 
   // While a turn runs, poll the server for the real pipeline stage and tick an
   // elapsed timer so the wait always shows movement, even on the long step.
@@ -283,6 +317,7 @@ export default function Session() {
     mr.start();
     recorder.current = mr;
     setRecording(true);
+    playSound("recordStart");
   }
 
   function submitRecording(blob: Blob) {
@@ -299,6 +334,7 @@ export default function Session() {
 
   async function stop() {
     const mr = recorder.current!;
+    playSound("recordStop");
     await new Promise<void>((res) => {
       mr.onstop = () => res();
       mr.stop();
@@ -316,7 +352,13 @@ export default function Session() {
 
   // Re-run analysis on the same recording (after a failure) — no re-recording.
   function retry() {
+    playSound("tap");
     if (lastBlobRef.current) submitRecording(lastBlobRef.current);
+  }
+
+  function markNewQuestionSound() {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem(NEW_QUESTION_SOUND_KEY, "1");
   }
 
   // While recording, tick a timer and auto-stop (which submits) once the max
@@ -353,7 +395,7 @@ export default function Session() {
       </div>
 
       <div className="pk-newq">
-        <Form method="post">
+        <Form method="post" onSubmit={markNewQuestionSound}>
           <input type="hidden" name="intent" value="skip" />
           <button type="submit" className="pk-btn pk-btn--ghost pk-newq-btn" disabled={busy}>
             New question ↻
@@ -494,7 +536,10 @@ export default function Session() {
             <button
               type="button"
               className="pk-btn pk-btn--teal pk-spacer"
-              onClick={() => location.reload()}
+              onClick={() => {
+                playSound("tap");
+                location.reload();
+              }}
             >
               Next →
             </button>
