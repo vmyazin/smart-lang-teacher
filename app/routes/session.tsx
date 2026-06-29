@@ -66,7 +66,7 @@ export async function action({ request }: Route.ActionArgs) {
     providers = getUserProviders(userId);
   } catch (err) {
     if (err instanceof MissingApiKeyError) {
-      if (intent === "skip") return redirect("/settings/keys");
+      if (intent === "skip" || intent === "next") return redirect("/settings/keys");
       return { error: "Add your API keys in Settings → API keys to start practicing." };
     }
     throw err;
@@ -74,10 +74,10 @@ export async function action({ request }: Route.ActionArgs) {
   const { chat, stt, tts } = providers;
 
   // "New question": record the current prompt as skipped, then regenerate.
-  if (intent === "skip") {
+  if (intent === "skip" || intent === "next") {
     const log = createLogger(`skip user=${userId}`);
     const current = user.current_prompt;
-    if (current) {
+    if (intent === "skip" && current) {
       const now = new Date();
       const sessionId = ctx.repo.createSession(userId, now.toISOString());
       ctx.repo.createTurn({
@@ -99,6 +99,7 @@ export async function action({ request }: Route.ActionArgs) {
     });
     ctx.repo.setCurrentPrompt(userId, fresh);
     log("new prompt generated", { chars: fresh.length });
+    if (intent === "next") return { prompt: fresh };
     return redirect("/session");
   }
 
@@ -226,8 +227,11 @@ const fmtClock = (s: number) =>
   `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 export default function Session() {
-  const { prompt, user, tracking } = useLoaderData<typeof loader>();
+  const { prompt: loaderPrompt, user, tracking } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const nextFetcher = useFetcher<typeof action>();
+  const [prompt, setPrompt] = useState(loaderPrompt);
+  const [showResult, setShowResult] = useState(false);
   const [recording, setRecording] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -239,9 +243,11 @@ export default function Session() {
   const soundsRef = useRef<Partial<Record<UiSound, HTMLAudioElement>>>({});
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
 
-  const busy = fetcher.state !== "idle";
+  const analysisBusy = fetcher.state !== "idle";
+  const nextBusy = nextFetcher.state !== "idle";
+  const busy = analysisBusy || nextBusy;
   const result =
-    fetcher.data && "result" in fetcher.data ? fetcher.data.result : null;
+    showResult && fetcher.data && "result" in fetcher.data ? fetcher.data.result : null;
   const error =
     fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
   const lesson = result?.lesson ?? null;
@@ -265,6 +271,26 @@ export default function Session() {
   }
 
   useEffect(() => {
+    setPrompt(loaderPrompt);
+  }, [loaderPrompt]);
+
+  useEffect(() => {
+    if (fetcher.data && "result" in fetcher.data) setShowResult(true);
+  }, [fetcher.data]);
+
+  useEffect(() => {
+    const nextPromptText = nextFetcher.data && "prompt" in nextFetcher.data ? nextFetcher.data.prompt : null;
+    if (typeof nextPromptText !== "string") return;
+    setPrompt(nextPromptText);
+    setShowResult(false);
+    lastBlobRef.current = null;
+    setRecordingUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }, [nextFetcher.data]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.sessionStorage.getItem(NEW_QUESTION_SOUND_KEY) !== "1") return;
     window.sessionStorage.removeItem(NEW_QUESTION_SOUND_KEY);
@@ -276,7 +302,7 @@ export default function Session() {
   // While a turn runs, poll the server for the real pipeline stage and tick an
   // elapsed timer so the wait always shows movement, even on the long step.
   useEffect(() => {
-    if (!busy) {
+    if (!analysisBusy) {
       setProgress(null);
       setElapsed(0);
       return;
@@ -307,7 +333,7 @@ export default function Session() {
       clearInterval(iv);
       clearInterval(tick);
     };
-  }, [busy]);
+  }, [analysisBusy]);
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -325,6 +351,7 @@ export default function Session() {
     tokenRef.current = token;
     setProgress(null);
     setElapsed(0);
+    setShowResult(false);
     const fd = new FormData();
     fd.append("prompt", prompt);
     fd.append("audio", blob, "audio.webm");
@@ -375,6 +402,13 @@ export default function Session() {
   function markNewQuestionSound() {
     if (typeof window === "undefined") return;
     window.sessionStorage.setItem(NEW_QUESTION_SOUND_KEY, "1");
+  }
+
+  function nextPrompt() {
+    playSound("tap");
+    const fd = new FormData();
+    fd.append("intent", "next");
+    nextFetcher.submit(fd, { method: "post" });
   }
 
   // While recording, tick a timer and auto-stop (which submits) once the max
@@ -432,12 +466,14 @@ export default function Session() {
           </svg>
         </button>
         <div className="pk-cap">
-          {busy
+          {analysisBusy
             ? (progress?.label ?? "Getting started…")
-            : recording
+            : nextBusy
+              ? "Getting your next question…"
+              : recording
               ? (wrappingUp ? `Wrap up — ${remaining}s left` : "Listening… tap to finish")
               : "Tap & talk!"}
-          {busy && (
+          {(analysisBusy || nextBusy) && (
             <span className="pk-dots" aria-hidden="true">
               <i />
               <i />
@@ -446,7 +482,7 @@ export default function Session() {
           )}
         </div>
 
-        {busy ? (
+        {analysisBusy ? (
           <div className="pk-progress" role="status" aria-live="polite">
             <div className="pk-progress-bar">
               <span
@@ -461,6 +497,10 @@ export default function Session() {
               </span>
               <span className="pk-progress-time">{elapsed}s</span>
             </div>
+          </div>
+        ) : nextBusy ? (
+          <div className="pk-cap-sub" role="status" aria-live="polite">
+            Loading a fresh prompt…
           </div>
         ) : recording ? (
           <div className="pk-recording-actions">
@@ -562,12 +602,10 @@ export default function Session() {
             <button
               type="button"
               className="pk-btn pk-btn--teal pk-spacer"
-              onClick={() => {
-                playSound("tap");
-                location.reload();
-              }}
+              onClick={nextPrompt}
+              disabled={busy}
             >
-              Next →
+              {nextBusy ? "Next…" : "Next →"}
             </button>
           </div>
         </>
