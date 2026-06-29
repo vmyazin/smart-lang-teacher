@@ -10,4 +10,5 @@ export default [
   route("settings/keys", "routes/settings.keys.tsx"),
   route("history", "routes/history.tsx"),
   route("history/:turnId", "routes/history.turn.tsx"),
+  route("about", "routes/about.tsx"),
 ] satisfies RouteConfig;

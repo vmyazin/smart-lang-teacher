@@ -16,6 +16,11 @@ same rules — keep the two in sync when you edit either.
   paste them into a prompt.
 - Do **not** bind to `0.0.0.0` on the VPS. Start with `HOST=127.0.0.1` and expose the
   app only through nginx, an SSH tunnel, or Tailscale.
+- When editing directly on the VPS (as in a typical Claude Code session here), code
+  changes are **not live** until you rebuild and restart pm2. After making changes,
+  run the full gate in [Before restarting the app](#before-restarting-the-app)
+  (`pnpm typecheck` → `pnpm test` → `pnpm build` → `pm2 restart smart-lang-teacher
+  --update-env`) so the running app reflects them.
 
 ## Stack
 
