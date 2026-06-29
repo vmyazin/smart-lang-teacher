@@ -483,7 +483,8 @@ export default function Session() {
           </div>
         ) : (
           <div className="pk-cap-sub">
-            Answer like you'd tell a friend — about three sentences.
+            Answer like you'd tell a friend — about three sentences. Make
+            mistakes freely; there's no shame or judgement here.
           </div>
         )}
 
