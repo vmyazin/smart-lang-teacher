@@ -150,6 +150,19 @@ body {
   font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
 }
 .pk-rectimer--warn { color: var(--berry); animation: pk-pulse 1s ease-in-out infinite; }
+.pk-recording-actions {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 2px; flex-wrap: wrap;
+}
+.pk-recording-actions .pk-cap-sub { margin-top: 0; }
+.pk-cancel-recording {
+  font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 13px;
+  color: var(--ink); background: #fff; border: 2.5px solid var(--shadow);
+  border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  box-shadow: 2px 2px 0 var(--shadow); transition: transform 0.1s, box-shadow 0.1s;
+}
+.pk-cancel-recording:hover { color: var(--berry); }
+.pk-cancel-recording:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--shadow); }
 @keyframes pk-pulse { 50% { opacity: 0.45; } }
 
 /* live turn progress */

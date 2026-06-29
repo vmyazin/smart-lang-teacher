@@ -333,13 +333,15 @@ export default function Session() {
   }
 
   async function stop() {
-    const mr = recorder.current!;
+    const mr = recorder.current;
+    if (!mr) return;
     playSound("recordStop");
     await new Promise<void>((res) => {
       mr.onstop = () => res();
       mr.stop();
     });
     mr.stream.getTracks().forEach((t) => t.stop());
+    recorder.current = null;
     setRecording(false);
     const blob = new Blob(chunks.current, { type: "audio/webm" });
     lastBlobRef.current = blob;
@@ -348,6 +350,20 @@ export default function Session() {
       return URL.createObjectURL(blob);
     });
     submitRecording(blob);
+  }
+
+  async function cancelRecording() {
+    const mr = recorder.current;
+    if (!mr) return;
+    playSound("tap");
+    await new Promise<void>((res) => {
+      mr.onstop = () => res();
+      mr.stop();
+    });
+    mr.stream.getTracks().forEach((t) => t.stop());
+    recorder.current = null;
+    chunks.current = [];
+    setRecording(false);
   }
 
   // Re-run analysis on the same recording (after a failure) — no re-recording.
@@ -447,14 +463,23 @@ export default function Session() {
             </div>
           </div>
         ) : recording ? (
-          <div
-            className={"pk-cap-sub pk-rectimer" + (wrappingUp ? " pk-rectimer--warn" : "")}
-            role="status"
-            aria-live={wrappingUp ? "assertive" : "off"}
-          >
-            {wrappingUp
-              ? `⏱ ${remaining}s — finishing automatically`
-              : `${fmtClock(recordSec)} / ${fmtClock(MAX_RECORDING_SEC)}`}
+          <div className="pk-recording-actions">
+            <div
+              className={"pk-cap-sub pk-rectimer" + (wrappingUp ? " pk-rectimer--warn" : "")}
+              role="status"
+              aria-live={wrappingUp ? "assertive" : "off"}
+            >
+              {wrappingUp
+                ? `⏱ ${remaining}s — finishing automatically`
+                : `${fmtClock(recordSec)} / ${fmtClock(MAX_RECORDING_SEC)}`}
+            </div>
+            <button
+              type="button"
+              className="pk-cancel-recording"
+              onClick={cancelRecording}
+            >
+              Cancel
+            </button>
           </div>
         ) : (
           <div className="pk-cap-sub">
