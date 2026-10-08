@@ -4,15 +4,15 @@
 
 **Goal:** Build a local-only web app that elicits a learner's spontaneous speech, transcribes it, silently diagnoses grammar/vocabulary/naturalness gaps, persists a running skill profile, and teaches the top issues gently with audio playback.
 
-**Architecture:** React Router v7 (framework mode, Node server) with a SQLite file via `better-sqlite3`. A two-stage Claude pipeline (diagnostician → lesson composer) wrapped behind injectable provider interfaces so every module is unit-testable with fakes. OpenAI Whisper for STT and OpenAI TTS for pronunciation playback. A deterministic profile-updater handles spaced repetition with no LLM call.
+**Architecture:** React Router v7 (framework mode, Node server) with a SQLite file via `better-sqlite3`. A two-stage Claude pipeline (diagnostician → lesson composer) wrapped behind injectable provider interfaces so every module is unit-testable with fakes. OpenAI `gpt-transcribe` for STT and OpenAI TTS (`gpt-4o-mini-tts`) for pronunciation playback. A deterministic profile-updater handles spaced repetition with no LLM call.
 
-**Tech Stack:** TypeScript, React Router v7, better-sqlite3, Vitest, `@anthropic-ai/sdk` (Claude Sonnet 4.6 + Zod structured outputs), `openai` (Whisper + TTS), Node `crypto` for passcode hashing.
+**Tech Stack:** TypeScript, React Router v7, better-sqlite3, Vitest, `@anthropic-ai/sdk` (Claude Sonnet 4.6 + Zod structured outputs), `openai` (`gpt-transcribe` + `gpt-4o-mini-tts`), Node `crypto` for passcode hashing.
 
 ## Global Constraints
 
 - **Model:** Claude Sonnet 4.6, exact ID `claude-sonnet-4-6`. Never append a date suffix.
 - **Claude SDK:** official `@anthropic-ai/sdk`. Structured output via `client.messages.parse()` + `zodOutputFormat()` in `output_config.format`. No assistant prefills (400 on Sonnet 4.6). Parse tool/JSON output via the SDK, never raw string matching.
-- **STT/TTS:** OpenAI `whisper-1` and `gpt-4o-mini-tts` via the `openai` SDK.
+- **STT/TTS:** OpenAI `gpt-transcribe` and `gpt-4o-mini-tts` via the `openai` SDK.
 - **Database:** SQLite file on disk via `better-sqlite3`. All DB access goes through the repository layer — no raw SQL in modules or routes.
 - **Secrets:** `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` from the environment. Never hardcode keys.
 - **Provider isolation:** LLM/STT/TTS are accessed through the `ChatModel`, `SpeechToText`, and `TextToSpeech` interfaces (Task 6). Modules receive these as injected dependencies; tests pass fakes. No live API calls in tests.
@@ -901,11 +901,15 @@ export function createOpenAiStt(client: OpenAI): SpeechToText {
   return {
     async transcribe(audio, { language }) {
       const file = await toFile(audio, "audio.webm", { type: "audio/webm" });
-      const res = await client.audio.transcriptions.create({
+      const body = {
         file,
-        model: "whisper-1",
-        ...(language ? { language } : {}),
-      });
+        model: "gpt-transcribe",
+        ...(language ? { languages: [language] } : {}),
+      };
+      const res = await client.audio.transcriptions.create(
+        { file, model: "gpt-transcribe" },
+        { body },
+      );
       return res.text;
     },
   };
@@ -2225,7 +2229,7 @@ git commit -m "feat: app context, sessions, and routes (login, onboarding, sessi
 **Spec coverage:**
 - §1 core loop → Tasks 8–12 (diagnose → update → compose → voice → next prompt). ✓
 - §2 scope (language-agnostic, multi-user, text+audio, immediate lesson, LLM prompts, running profile, native-language teaching) → Tasks 4, 7, 9, 10, 12. Pronunciation/charts explicitly deferred. ✓
-- §3 stack (React Router v7, Sonnet 4.6 via `@anthropic-ai/sdk`, Whisper, OpenAI TTS, SQLite, passcode auth) → Tasks 1, 2, 5, 6, 12. ✓
+- §3 stack (React Router v7, Sonnet 4.6 via `@anthropic-ai/sdk`, gpt-transcribe, OpenAI TTS, SQLite, passcode auth) → Tasks 1, 2, 5, 6, 12. ✓
 - §4 modules (auth, onboarding, prompt-generator, recorder, transcriber, diagnostician, profile-updater, lesson-composer, speech-synth, persistence) → Tasks 4–12. Transcriber/speech-synth are the STT/TTS providers in Task 6. Recorder is in the Task 12 session route. ✓
 - §5 diagnosis dimensions → `IssueSchema` enum (Task 3) + diagnostician prompt (Task 8). ✓
 - §6 skill profile + spaced repetition → Task 7. ✓

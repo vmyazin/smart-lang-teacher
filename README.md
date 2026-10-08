@@ -8,15 +8,15 @@ running per-user skill profile with spaced repetition, and teaches the top issue
 with audio playback of the natural phrasing.
 
 **The loop:** generate a prompt (tuned to your interests + weak spots) → record a spoken
-answer → Whisper transcribes → Claude diagnoses silently → deterministic profile update →
-Claude composes a gentle mini-lesson on the top 1–3 issues → OpenAI TTS voices the example
+answer → OpenAI (`gpt-transcribe`) transcribes → Claude diagnoses silently → deterministic profile update →
+Claude composes a gentle mini-lesson on the top 1–3 issues → OpenAI TTS (`gpt-4o-mini-tts`) voices the example
 phrases so you can hear them.
 
 ## Stack
 
 - **React Router v8** (framework mode, Node server)
 - **Claude Sonnet 4.6** via `@anthropic-ai/sdk` (Zod-validated structured output)
-- **OpenAI Whisper** (speech-to-text) + **OpenAI TTS** (pronunciation playback)
+- **OpenAI** `gpt-transcribe` (speech-to-text) + **OpenAI TTS** `gpt-4o-mini-tts` (pronunciation playback)
 - **SQLite** via `better-sqlite3`
 - **Vitest** for tests
 
