@@ -11,7 +11,7 @@ spontaneous speech, rather than serving generic canned content. Each turn:
 ```
 generate prompt (themed by interests + targeting weak/due skill items)
    → learner records a spoken answer in the target language
-   → Whisper transcribes it
+   → gpt-transcribe transcribes it
    → Diagnostician (Claude) silently analyzes the FULL transcript → structured issues
    → Profile updater merges issues into the running skill profile + schedules review
    → Lesson composer (Claude) teaches the top 1–3 gently, in the learner's native language
@@ -33,7 +33,7 @@ surface as a warm "here's how to sound more natural" lesson — never a red-pen 
 - **Memory:** a running structured skill profile per user (recurring gaps, weak vocab,
   naturalness issues), updated every session and used to target lessons + spaced repetition.
 - **Teaching language:** the learner's configured native language.
-- **Out of scope (v1):** pronunciation/accent analysis (Whisper returns text only — TTS still
+- **Out of scope (v1):** pronunciation/accent analysis (transcription returns text only — TTS still
   lets the learner *hear* correct pronunciation); progress charts/trend visualizations;
   real-time conversational voice agent; public sign-up / real identity system.
 
@@ -48,15 +48,15 @@ surface as a warm "here's how to sound more natural" lesson — never a red-pen 
   Zod-validated results. Adaptive thinking (`thinking: { type: "adaptive" }`) MAY be enabled
   on the diagnostician where deeper analysis helps; the lesson composer runs without thinking
   for lower latency.
-- **Speech-to-text:** OpenAI **Whisper** (`whisper-1`) via the `openai` SDK.
-- **Text-to-speech:** OpenAI **TTS** (`gpt-4o-mini-tts` / `tts-1`) via the `openai` SDK.
+- **Speech-to-text:** OpenAI **`gpt-transcribe`** via the `openai` SDK (`POST /v1/audio/transcriptions`).
+- **Text-to-speech:** OpenAI **TTS** (`gpt-4o-mini-tts`) via the `openai` SDK (`POST /v1/audio/speech`).
 - **Database:** **SQLite** file on disk (e.g. `better-sqlite3`), accessed through a thin
   repository layer.
 - **Auth:** lightweight — pick-a-profile + per-user passcode (hashed). Just enough so each
   friend has isolated data. No real identity system.
 
 Environment requires two API keys: `ANTHROPIC_API_KEY` (Claude) and `OPENAI_API_KEY`
-(Whisper + TTS).
+(speech-to-text + TTS).
 
 ## 4. Architecture — modules
 
@@ -67,7 +67,7 @@ with a fake LLM / STT / TTS.
 - **`onboarding`** — captures native language, target language, interests, self-rated level.
 - **`prompt-generator`** — `(profile, interests, due-items) → prompt text`. One Claude call.
 - **`recorder`** (client) — browser `MediaRecorder`; uploads the audio blob.
-- **`transcriber`** — `(audio) → transcript`. Whisper wrapper.
+- **`transcriber`** — `(audio) → transcript`. `gpt-transcribe` wrapper.
 - **`diagnostician`** — `(transcript, target, native, profile) → issues[]`. Claude with a
   Zod-validated schema. "Find everything, judge nothing."
 - **`profile-updater`** — `(profile, new issues) → updated profile`. **Deterministic** logic
@@ -90,7 +90,7 @@ The diagnostician scores across what separates an intermediate learner from a na
 
 Each issue: `{ dimension, severity, snippet, natural_version, explanation, tags[] }`.
 
-*Known limitation:* pronunciation/accent cannot be judged from a transcript (Whisper returns
+*Known limitation:* pronunciation/accent cannot be judged from a transcript (speech-to-text returns
 text only), so it is scoped out of v1 analysis. TTS still provides correct pronunciation to hear.
 
 ## 6. The skill profile (memory)
@@ -125,7 +125,7 @@ gets chances to re-attempt weak spots.
 ## 8. The two-stage pipeline (chosen approach)
 
 ```
-Whisper → Diagnostician (structured analysis of the full transcript)
+gpt-transcribe → Diagnostician (structured analysis of the full transcript)
         → Profile update (deterministic)
         → Lesson-composer (teaches only the top 1–3 curated issues)
 ```
@@ -142,7 +142,7 @@ without touching analysis. The extra LLM call is negligible at this scale.
 ## 9. Error handling
 
 - Mic permission denied / no audio → friendly retry; never lose the current prompt.
-- Whisper / Claude / TTS failure → graceful per-stage fallback (e.g. lesson still shows as
+- Transcription / Claude / TTS failure → graceful per-stage fallback (e.g. lesson still shows as
   text if TTS fails; "couldn't analyze, try again" if diagnosis fails). One failing stage
   never blanks the screen.
 - Transcript empty / too short → skip diagnosis, ask the learner to say a bit more.
@@ -163,4 +163,4 @@ Per the user's testing policy, write tests where they add clear value rather tha
 
 - Hosting beyond local (VPS / Fly.io / Turso) — deferred; SQLite file is fine for now.
 - Progress visualizations and long-term trend charts — deferred to a later milestone.
-- Pronunciation/accent analysis — needs audio-level analysis beyond Whisper transcripts.
+- Pronunciation/accent analysis — needs audio-level analysis beyond speech-to-text transcripts.
